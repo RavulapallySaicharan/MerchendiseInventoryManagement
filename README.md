@@ -1,5 +1,16 @@
 # Merchandise Inventory Management
 
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue) ![React](https://img.shields.io/badge/React-17%2B-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [Usage](#usage)
+- [Notes](#notes)
+- [Contributions](#contributions)
+- [License](#license)
+
 ## Overview
 This project is a Merchandise Inventory Management application that includes a FastAPI backend and a React frontend. The application allows users to register, log in, and manage their passwords.
 
