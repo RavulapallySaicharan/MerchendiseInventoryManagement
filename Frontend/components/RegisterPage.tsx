@@ -1,45 +1,50 @@
-"use client"
-
 import React, { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { User, Lock } from "lucide-react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import { User, Lock } from "lucide-react"
 
-const LoginPage: React.FC = () => {
+const RegisterPage: React.FC = () => {
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const response = await axios.post(
-        "http://localhost:8000/token",
-        new URLSearchParams({
-          username: email,
-          password: password,
-        }),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      )
-      alert("Login successful!")
-      navigate("/home")
+      await axios.post("http://localhost:8000/register", {
+        email,
+        username,
+        password,
+      })
+      alert("Registration successful! Please log in.")
+      navigate("/login")
     } catch (error) {
-      alert("Invalid credentials. Please try again.")
+      alert("Registration failed. Please try again.")
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-blue-400 to-purple-500 flex justify-center items-center">
+    <div className="min-h-screen bg-gradient-to-r from-green-400 to-blue-500 flex justify-center items-center">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <div className="flex justify-center mb-6">
-          <User className="w-16 h-16 text-blue-500" />
-        </div>
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Login</h2>
-        <form onSubmit={handleLogin}>
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Register</h2>
+        <form onSubmit={handleRegister}>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
+              Username
+            </label>
+            <div className="flex items-center border rounded-md">
+              <User className="w-5 h-5 text-gray-400 mx-3" />
+              <input
+                className="appearance-none border-none w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none"
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
               Email
@@ -74,25 +79,16 @@ const LoginPage: React.FC = () => {
           </div>
           <div className="flex items-center justify-between">
             <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               type="submit"
             >
-              Login
+              Register
             </button>
           </div>
         </form>
-        <div className="mt-4 text-center">
-          <Link to="/change-password" className="text-sm text-blue-500 hover:underline">
-            Forgot Password?
-          </Link>
-          <span className="mx-2">|</span>
-          <Link to="/register" className="text-sm text-blue-500 hover:underline">
-            Register New User
-          </Link>
-        </div>
       </div>
     </div>
   )
 }
 
-export default LoginPage
+export default RegisterPage

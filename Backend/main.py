@@ -6,9 +6,25 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import secrets
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from database import get_db
+import models
+from database import engine
+
+models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Security configurations
 SECRET_KEY = "your-secret-key-here"  # In production, use environment variable
@@ -17,10 +33,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# In-memory storage
-users: Dict[str, dict] = {}
-reset_tokens: Dict[str, str] = {}
 
 # Pydantic models
 class UserCreate(BaseModel):
@@ -62,56 +74,59 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # API endpoints
 @app.post("/register", response_model=User)
-def register_user(user: UserCreate):
-    if user.email in users:
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = get_password_hash(user.password)
-    users[user.email] = {
-        "username": user.username,
-        "hashed_password": hashed_password,
-        "is_active": True
-    }
-    
-    return User(email=user.email, username=user.username)
+    db_user = models.User(
+        email=user.email,
+        username=user.username,
+        hashed_password=hashed_password
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 @app.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user_data = users.get(form_data.username)
-    if not user_data or not verify_password(form_data.password, user_data["hashed_password"]):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": form_data.username},
-        expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/reset-password")
-def request_password_reset(reset_request: ResetPassword):
-    if reset_request.email not in users:
+def request_password_reset(reset_request: ResetPassword, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == reset_request.email).first()
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     reset_token = secrets.token_urlsafe(32)
-    reset_tokens[reset_token] = reset_request.email
+    user.reset_token = reset_token
+    db.commit()
     
     # In a real application, send this token via email
     return {"message": "Password reset link has been sent to your email", "token": reset_token}
 
 @app.post("/change-password")
-def change_password(change_request: ChangePassword):
-    if change_request.token not in reset_tokens:
+def change_password(change_request: ChangePassword, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.reset_token == change_request.token).first()
+    if not user:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
-    email = reset_tokens[change_request.token]
-    users[email]["hashed_password"] = get_password_hash(change_request.new_password)
-    del reset_tokens[change_request.token]
-    
+    user.hashed_password = get_password_hash(change_request.new_password)
+    user.reset_token = None  # Clear the reset token
+    db.commit()
     return {"message": "Password has been successfully changed"}
 
 if __name__ == "__main__":
