@@ -10,6 +10,7 @@
 - [Notes](#notes)
 - [Contributions](#contributions)
 - [License](#license)
+- [Testing](#testing)
 
 ## Overview
 This project is a Merchandise Inventory Management application that includes a FastAPI backend and a React frontend. The application allows users to register, log in, and manage their passwords.
@@ -64,6 +65,23 @@ This project is a Merchandise Inventory Management application that includes a F
 
 ## Contributions
 Feel free to fork this repository and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+## Testing
+
+### Running Tests
+To run the unit tests for the backend functionalities, navigate to the root directory and execute:
+
+```bash
+pytest Testing/test_login.py
+```
+
+### Test Coverage
+The tests cover the following functionalities:
+- **Login**: Tests for successful login and login failure with incorrect credentials.
+- **Registration**: Tests for successful user registration and failure when using an existing email.
+- **Change Password**: Tests for successful password change using a valid reset token and failure with an invalid token.
+
+Ensure that the backend server is not running while executing these tests to avoid conflicts with the test database setup.
 
 ## License
 This project is licensed under the MIT License.
