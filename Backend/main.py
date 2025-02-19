@@ -13,7 +13,19 @@ import models
 from database import engine
 from add_products import add_products
 from models import Product
+import smtplib
+import asyncio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import sqlite3
 
+# Database and Email Configuration
+DB_PATH = "app.db"
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+EMAIL_SENDER = "ravulapally.saicharan261@gmail.com"
+EMAIL_PASSWORD = "CherryRavu1!"
+EMAIL_RECEIVER = "ravulapally.saicharan261@gmail.com"
 
 models.Base.metadata.create_all(bind=engine)
 add_products()
@@ -76,7 +88,59 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+async def check_low_stock():
+    """Checks for low stock products and sends email notifications every 3 Hours."""
+    while True:
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            query = """SELECT name, stock_level, reorder_threshold FROM Products WHERE stock_level < reorder_threshold"""
+            cursor.execute(query)
+            low_stock_items = cursor.fetchall()
+            conn.close()
+
+            if low_stock_items:
+                await send_email_notification(low_stock_items)
+                print("Low stock alert email sent successfully.")
+
+        except Exception as e:
+            print(f"Error checking low stock: {e}")
+
+        await asyncio.sleep(3600 * 3)  # Wait for 3 hours before checking again
+
+async def send_email_notification(products):
+    """Sends an email notification for low stock products."""
+    try:
+        subject = "Low Stock Alert 🚨"
+        body = "The following products are low in stock:\n\n"
+
+        for name, stock, threshold in products:
+            body += f"- {name}: {stock} (Threshold: {threshold})\n"
+
+        msg = MIMEMultipart()
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = EMAIL_RECEIVER
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        # Sending email
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
+        server.quit()
+
+        print("Low stock alert email sent successfully.")
+
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
 # API endpoints
+@app.on_event("startup")
+async def start_background_task():
+    """Starts the background task when FastAPI app starts."""
+    asyncio.create_task(check_low_stock())
+
 @app.post("/register", response_model=User)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -138,6 +202,13 @@ def change_password(change_request: ChangePassword, db: Session = Depends(get_db
 def get_products(db: Session = Depends(get_db)):
     products = db.query(Product).all()
     return products
+
+@app.get("/products/{product_name}")
+def get_product(product_name: str, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.name == product_name).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 
 @app.post("/purchase")
 def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):

@@ -30,4 +30,3 @@ const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
 }
 
 export default InventoryItem
-
