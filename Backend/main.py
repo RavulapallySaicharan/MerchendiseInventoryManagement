@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -138,6 +138,24 @@ def change_password(change_request: ChangePassword, db: Session = Depends(get_db
 def get_products(db: Session = Depends(get_db)):
     products = db.query(Product).all()
     return products
+
+@app.post("/purchase")
+def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
+    for purchase in purchases:
+        product_id = purchase.get('product_id')
+        quantity = purchase.get('quantity')
+
+        product = db.query(Product).filter(Product.name == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product with id {product_id} not found")
+
+        if product.stock_level < quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
+
+        product.stock_level -= quantity
+        db.commit()
+
+    return {"message": "Purchase successful"}
 
 if __name__ == "__main__":
     import uvicorn
