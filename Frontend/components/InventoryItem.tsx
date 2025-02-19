@@ -5,8 +5,8 @@ interface InventoryItemProps {
   item: {
     id: number
     name: string
-    quantity: number
-    lowStockThreshold: number
+    stock_level: number
+    reorder_threshold: number
     batchInfo: string
     supplier: string
     image: string
@@ -14,7 +14,7 @@ interface InventoryItemProps {
 }
 
 const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
-  const isLowStock = item.quantity <= item.lowStockThreshold
+  const isLowStock = item.stock_level <= item.reorder_threshold
 
   return (
     <div className={`border rounded-md p-2 ${isLowStock ? "bg-red-100" : "bg-gray-50"}`}>
@@ -22,7 +22,7 @@ const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
         <Image src={item.image || "/placeholder.svg"} alt={item.name} width={50} height={50} className="rounded-md" />
         <div>
           <h3 className="font-semibold text-sm">{item.name}</h3>
-          <p className="text-xs">Quantity: {item.quantity}</p>
+          <p className="text-xs">Quantity: {item.stock_level}</p>
         </div>
       </div>
     </div>

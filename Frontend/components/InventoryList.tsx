@@ -5,7 +5,7 @@ import { List } from "lucide-react"
 interface InventoryItemType {
   id: number
   name: string
-  quantity: number
+  stock_level: number
   lowStockThreshold: number
   batchInfo: string
   supplier: string

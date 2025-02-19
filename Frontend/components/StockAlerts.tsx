@@ -4,8 +4,8 @@ import { AlertTriangle } from "lucide-react"
 interface InventoryItemType {
   id: number
   name: string
-  quantity: number
-  lowStockThreshold: number
+  stock_level: number
+  reorder_threshold: number
 }
 
 interface StockAlertsProps {
@@ -13,7 +13,7 @@ interface StockAlertsProps {
 }
 
 const StockAlerts: React.FC<StockAlertsProps> = ({ inventory }) => {
-  const lowStockItems = inventory.filter((item) => item.quantity <= item.lowStockThreshold)
+  const lowStockItems = inventory.filter((item) => item.stock_level <= item.reorder_threshold)
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4">
@@ -27,8 +27,8 @@ const StockAlerts: React.FC<StockAlertsProps> = ({ inventory }) => {
         <ul className="space-y-2">
           {lowStockItems.map((item) => (
             <li key={item.id} className="bg-red-100 p-2 rounded">
-              <span className="font-semibold">{item.name}</span> - Current stock: {item.quantity} (Low stock threshold:{" "}
-              {item.lowStockThreshold})
+              <span className="font-semibold">{item.name}</span> - Current stock: {item.stock_level} (Low stock threshold:{" "}
+              {item.reorder_threshold})
             </li>
           ))}
         </ul>
