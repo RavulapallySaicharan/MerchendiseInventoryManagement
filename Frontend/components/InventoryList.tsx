@@ -6,9 +6,10 @@ interface InventoryItemType {
   id: number
   name: string
   stock_level: number
-  lowStockThreshold: number
+  reorder_threshold: number
   batchInfo: string
   supplier: string
+  image: string
 }
 
 interface InventoryListProps {

@@ -27,6 +27,8 @@ const HomePage: React.FC = () => {
     }
 
     fetchProducts()
+    const interval = setInterval(fetchProducts, 5000) // Fetch every 5 seconds
+    return () => clearInterval(interval) // Cleanup on unmount
   }, [])
 
   // Simulate real-time updates
