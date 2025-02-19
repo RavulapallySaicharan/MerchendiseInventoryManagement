@@ -11,99 +11,37 @@ import BatchTracking from "./BatchTracking"
 import SupplierIntegration from "./SupplierIntegration"
 import Analytics from "./Analytics"
 
-// Updated mock data with more products and image URLs
-const initialInventory = [
-  {
-    id: 1,
-    name: "Branded T-shirt",
-    quantity: 100,
-    lowStockThreshold: 20,
-    batchInfo: "Batch A",
-    supplier: "Supplier X",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 2,
-    name: "Mug",
-    quantity: 50,
-    lowStockThreshold: 10,
-    batchInfo: "Batch B",
-    supplier: "Supplier Y",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 3,
-    name: "Keychain",
-    quantity: 200,
-    lowStockThreshold: 30,
-    batchInfo: "Batch C",
-    supplier: "Supplier Z",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 4,
-    name: "Reusable Ice Cream Container",
-    quantity: 75,
-    lowStockThreshold: 15,
-    batchInfo: "Batch D",
-    supplier: "Supplier W",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 5,
-    name: "Branded Cap",
-    quantity: 80,
-    lowStockThreshold: 15,
-    batchInfo: "Batch E",
-    supplier: "Supplier X",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 6,
-    name: "Notebook",
-    quantity: 120,
-    lowStockThreshold: 25,
-    batchInfo: "Batch F",
-    supplier: "Supplier Y",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 7,
-    name: "Water Bottle",
-    quantity: 90,
-    lowStockThreshold: 20,
-    batchInfo: "Batch G",
-    supplier: "Supplier Z",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-  {
-    id: 8,
-    name: "Tote Bag",
-    quantity: 60,
-    lowStockThreshold: 12,
-    batchInfo: "Batch H",
-    supplier: "Supplier W",
-    image: "/placeholder.svg?height=100&width=100",
-  },
-]
-
 const HomePage: React.FC = () => {
-  const [inventory, setInventory] = useState(initialInventory)
+  const [inventory, setInventory] = useState([])
   const navigate = useNavigate()
 
-  // Simulate real-time updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setInventory((prevInventory) =>
-        prevInventory.map((item) => ({
-          ...item,
-          quantity: Math.max(0, item.quantity + Math.floor(Math.random() * 5) - 2),
-        })),
-      )
-    }, 5000)
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/products")
+        const data = await response.json()
+        setInventory(data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
 
-    return () => clearInterval(interval)
+    fetchProducts()
   }, [])
+
+  // Simulate real-time updates
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setInventory((prevInventory) =>
+  //       prevInventory.map((item) => ({
+  //         ...item,
+  //         quantity: Math.max(0, item.quantity + Math.floor(Math.random() * 5) - 2),
+  //       })),
+  //     )
+  //   }, 5000)
+
+  //   return () => clearInterval(interval)
+  // }, [])
 
   const handleLogout = () => {
     navigate("/")
@@ -150,4 +88,3 @@ const HomePage: React.FC = () => {
 }
 
 export default HomePage
-

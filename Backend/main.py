@@ -11,8 +11,12 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 from database import engine
+from add_products import add_products
+from models import Product
+
 
 models.Base.metadata.create_all(bind=engine)
+add_products()
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -128,6 +132,12 @@ def change_password(change_request: ChangePassword, db: Session = Depends(get_db
     user.reset_token = None  # Clear the reset token
     db.commit()
     return {"message": "Password has been successfully changed"}
+
+
+@app.get("/products")
+def get_products(db: Session = Depends(get_db)):
+    products = db.query(Product).all()
+    return products
 
 if __name__ == "__main__":
     import uvicorn

@@ -14,7 +14,7 @@ interface AnalyticsProps {
 const Analytics: React.FC<AnalyticsProps> = ({ inventory }) => {
   const totalItems = inventory.reduce((sum, item) => sum + item.quantity, 0)
   const averageStock = totalItems / inventory.length
-  const mostPopular = inventory.reduce((prev, current) => (prev.quantity < current.quantity ? current : prev))
+  const mostPopular = inventory.length > 0 ? inventory.reduce((prev, current) => (prev.quantity < current.quantity ? current : prev)) : null
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4 col-span-2">
@@ -33,8 +33,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ inventory }) => {
         </div>
         <div className="bg-indigo-100 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">Most Popular Item</h3>
-          <p className="text-xl font-bold text-indigo-600">{mostPopular.name}</p>
-          <p className="text-indigo-600">Quantity: {mostPopular.quantity}</p>
+          <p className="text-xl font-bold text-indigo-600">{mostPopular?.name}</p>
+          <p className="text-indigo-600">Quantity: {mostPopular?.quantity}</p>
         </div>
       </div>
     </div>
@@ -42,4 +42,3 @@ const Analytics: React.FC<AnalyticsProps> = ({ inventory }) => {
 }
 
 export default Analytics
-
