@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
           },
         }
       )
-      alert("Login successful!")
+      // alert("Login successful!")
       navigate("/home")
     } catch (error) {
       alert("Invalid credentials. Please try again.")

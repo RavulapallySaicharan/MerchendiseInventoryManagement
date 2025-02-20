@@ -47,10 +47,10 @@ def add_suppliers():
 def add_products():
     session = get_session()
     products = [
-        Product(name="Branded T-shirt", category="Clothing", stock_level=10, reorder_threshold=20, price=15.99, supplier_id=1),
-        Product(name="Mug", category="Kitchenware", stock_level=200, reorder_threshold=50, price=5.99, supplier_id=2),
-        Product(name="Keychain", category="Accessories", stock_level=300, reorder_threshold=75, price=2.99, supplier_id=3),
-        Product(name="Reusable Ice Cream Container", category="Kitchenware", stock_level=150, reorder_threshold=30, price=10.99, supplier_id=4),
+        Product(name="Branded T-shirt", category="Clothing", stock_level=10, reorder_threshold=20, price=15.99, supplier_id=1, image_url="/images/tshirt.png"),
+        Product(name="Mug", category="Kitchenware", stock_level=200, reorder_threshold=50, price=5.99, supplier_id=2, image_url="/images/mug.jpg"),
+        Product(name="Keychain", category="Accessories", stock_level=300, reorder_threshold=75, price=2.99, supplier_id=3, image_url="/images/keychain.jpeg"),
+        Product(name="Reusable Ice Cream Container", category="Kitchenware", stock_level=150, reorder_threshold=30, price=10.99, supplier_id=4, image_url="/images/ice_cream_container.jpg"),
     ]
 
     for product in products:

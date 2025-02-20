@@ -9,7 +9,7 @@ interface InventoryItemType {
   reorder_threshold: number
   batchInfo: string
   supplier: string
-  image: string
+  image_url: string
 }
 
 interface InventoryListProps {

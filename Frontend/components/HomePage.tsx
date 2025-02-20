@@ -31,20 +31,6 @@ const HomePage: React.FC = () => {
     return () => clearInterval(interval) // Cleanup on unmount
   }, [])
 
-  // Simulate real-time updates
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     setInventory((prevInventory) =>
-  //       prevInventory.map((item) => ({
-  //         ...item,
-  //         quantity: Math.max(0, item.quantity + Math.floor(Math.random() * 5) - 2),
-  //       })),
-  //     )
-  //   }, 5000)
-
-  //   return () => clearInterval(interval)
-  // }, [])
-
   const handleLogout = () => {
     navigate("/")
   }

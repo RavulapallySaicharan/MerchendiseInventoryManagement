@@ -24,6 +24,7 @@ class Product(Base):
     reorder_threshold = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'))
+    image_url = Column(String, nullable=True)  # Store image file path or URL
     # created_at = Column(TIMESTAMP, server_default=func.now())
     # updated_at = Column(TIMESTAMP, onupdate=func.now())
 
