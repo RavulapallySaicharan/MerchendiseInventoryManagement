@@ -1,3 +1,4 @@
+import models
 import asyncio
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
@@ -17,8 +18,7 @@ from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
 
 from data_loader import add_batches, add_products, add_suppliers
-from database import get_db
-import models
+from database import get_db, engine
 from models import Base, Product, Supplier
 
 # Database and Email Configuration
@@ -73,6 +73,22 @@ class ChangePassword(BaseModel):
     token: str
     new_password: str
 
+class ReviewCreate(BaseModel):
+    product_id: int
+    rating: int
+    review_text: str
+
+class ReviewResponse(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    rating: int
+    review_text: str
+    created_at: datetime
+    
+    class Config:
+        orm_mode = True
+
 # Helper functions
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
@@ -88,6 +104,25 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 async def check_low_stock():
     """Checks for low stock products and sends email notifications every 3 Hours."""
@@ -198,6 +233,47 @@ def change_password(change_request: ChangePassword, db: Session = Depends(get_db
     db.commit()
     return {"message": "Password has been successfully changed"}
 
+@app.post("/reviews/", response_model=ReviewResponse)
+async def create_review(
+    review: ReviewCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Validate rating
+    if not 1 <= review.rating <= 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rating must be between 1 and 5"
+        )
+    
+    # Validate review text
+    if not review.review_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Review text cannot be empty"
+        )
+    
+    # Check if product exists
+    product = db.query(models.Product).filter(models.Product.id == review.product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Create review
+    db_review = models.Review(
+        product_id=review.product_id,
+        user_id=current_user.id,
+        rating=review.rating,
+        review_text=review.review_text
+    )
+    
+    db.add(db_review)
+    db.commit()
+    db.refresh(db_review)
+    
+    return db_review
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db)):
@@ -230,9 +306,6 @@ def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
     return {"message": "Purchase successful"}
 
 def initialize_db():
-    metadata = MetaData()
-    metadata.reflect(bind=engine)  # Reflect current database schema
-
     print("Creating tables...")
     Base.metadata.create_all(engine)  # Recreate tables
 

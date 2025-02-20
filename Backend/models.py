@@ -12,6 +12,7 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     reset_token = Column(String, nullable=True)
+    reviews = relationship("Review", back_populates="user")
 
 class Product(Base):
     __tablename__ = 'products'
@@ -31,6 +32,9 @@ class Product(Base):
 
     # Relationship: A product can have multiple batches
     batches = relationship("Batch", back_populates="product")
+
+    # Relationship: A product can have multiple reviews
+    reviews = relationship("Review", back_populates="product")
 
 class Supplier(Base):
     __tablename__ = 'suppliers'
@@ -62,3 +66,18 @@ class Batch(Base):
 
     # Relationships
     product = relationship("Product", back_populates="batches")
+
+class Review(Base):
+    __tablename__ = 'reviews'
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    rating = Column(Integer, nullable=False)
+    review_text = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, onupdate=func.now())
+
+    # Relationships
+    product = relationship("Product", back_populates="reviews")
+    user = relationship("User", back_populates="reviews")
