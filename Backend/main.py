@@ -1,34 +1,35 @@
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
-from typing import Dict, Optional, List
+import asyncio
 from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import secrets
+import smtplib
+import sqlite3
+from typing import Dict, List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-import secrets
-from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
+
+from data_loader import add_batches, add_products, add_suppliers
 from database import get_db
 import models
-from database import engine
-from add_products import add_products
-from models import Product
-import smtplib
-import asyncio
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import sqlite3
+from models import Base, Product, Supplier
 
 # Database and Email Configuration
 DB_PATH = "app.db"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_SENDER = "ravulapally.saicharan261@gmail.com"
-EMAIL_PASSWORD = "CherryRavu1!"
+EMAIL_PASSWORD = "****"
 EMAIL_RECEIVER = "ravulapally.saicharan261@gmail.com"
 
 models.Base.metadata.create_all(bind=engine)
-add_products()
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -228,6 +229,19 @@ def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
 
     return {"message": "Purchase successful"}
 
+def initialize_db():
+    metadata = MetaData()
+    metadata.reflect(bind=engine)  # Reflect current database schema
+
+    print("Creating tables...")
+    Base.metadata.create_all(engine)  # Recreate tables
+
 if __name__ == "__main__":
+    initialize_db()
+    add_suppliers()
+    add_products()
+    add_batches()
+
+    print("Database initialized and sample data added successfully!")
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

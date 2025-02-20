@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Enum, ForeignKey, TIMESTAMP, func
+from sqlalchemy.orm import relationship
 from database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -21,16 +23,42 @@ class Product(Base):
     reorder_threshold = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'))
+    # created_at = Column(TIMESTAMP, server_default=func.now())
+    # updated_at = Column(TIMESTAMP, onupdate=func.now())
+
+     # Relationship: Each product belongs to a supplier
+    supplier = relationship("Supplier", back_populates="products")
+
+    # Relationship: A product can have multiple batches
+    batches = relationship("Batch", back_populates="product")
 
 class Supplier(Base):
     __tablename__ = 'suppliers'
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    contact_information = Column(String)
+    contact_person = Column(String, nullable=False)
+    phone = Column(String(20), nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    address = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, onupdate=func.now())
 
-# Placeholder for the batch table
-# class Batch(Base):
-#     __tablename__ = 'batch'
-#     # Define fields for the batch table here
-#     pass
+    # Relationship: A supplier can provide multiple products
+    products = relationship("Product", back_populates="supplier")
+
+class Batch(Base):
+    __tablename__ = 'batches'
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=False)
+    quantity_received = Column(Integer, nullable=False)
+    received_date = Column(Date, nullable=False)
+    expiration_date = Column(Date, nullable=True)  # Nullable for non-expiring items
+    batch_status = Column(Enum('Active', 'Expired', 'Sold Out', name='batch_status'), nullable=False, default='Active')
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, onupdate=func.now())
+
+    # Relationships
+    product = relationship("Product", back_populates="batches")
