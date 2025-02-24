@@ -26,6 +26,7 @@ const LoginPage: React.FC = () => {
         }
       )
       // alert("Login successful!")
+      localStorage.setItem("token", response.data.access_token);
       navigate("/home")
     } catch (error) {
       alert("Invalid credentials. Please try again.")

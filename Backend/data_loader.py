@@ -1,6 +1,11 @@
 from database import get_session
-from models import Product, Supplier, Batch
+from models import Product, Supplier, Batch, Role, User
 from datetime import date
+
+def add_admin_role():
+    session = get_session()
+    session.query(User).filter(User.username == "admin").update({"role_id": 1})
+    session.commit()
 
 def add_suppliers():
     session = get_session()
@@ -79,4 +84,17 @@ def add_batches():
             session.rollback()  # Rollback on error
             print(f"Error adding batch {batch_data.id}: {e}")
 
+    session.close()
+
+def add_default_roles():
+    session = get_session()
+
+    roles = [ Role(id = 1, name = 'Admin'), Role(id = 2, name = 'Customer'), Role(id = 3, name = 'Supplier')]
+
+    for role in roles:
+        existing_role = session.query(Role).filter_by(name=role.name).first()
+        if not existing_role:
+            session.add(role)
+
+    session.commit()
     session.close()

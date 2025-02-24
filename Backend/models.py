@@ -12,7 +12,17 @@ class User(Base):
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
     reset_token = Column(String, nullable=True)
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=True, default=2)  # Default to Customer role
     reviews = relationship("Review", back_populates="user")
+    role = relationship("Role", back_populates="users")
+
+class Role(Base):
+    __tablename__ = 'roles'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+
+    users = relationship("User", back_populates="role")
 
 class Product(Base):
     __tablename__ = 'products'

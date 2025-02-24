@@ -17,9 +17,10 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
 
-from data_loader import add_batches, add_products, add_suppliers
+from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine
-from models import Base, Product, Supplier
+from models import Base, Product, Supplier, User, Role
+from auth_controller import router as auth_router
 
 # Database and Email Configuration
 DB_PATH = "app.db"
@@ -33,6 +34,7 @@ models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI()
+app.include_router(auth_router)
 
 # Add CORS middleware
 app.add_middleware(
@@ -306,6 +308,8 @@ def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
     return {"message": "Purchase successful"}
 
 def initialize_db():
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
+
     print("Creating tables...")
     Base.metadata.create_all(engine)  # Recreate tables
 
@@ -314,6 +318,8 @@ if __name__ == "__main__":
     add_suppliers()
     add_products()
     add_batches()
+    add_default_roles()
+    add_admin_role()
 
     print("Database initialized and sample data added successfully!")
     import uvicorn
