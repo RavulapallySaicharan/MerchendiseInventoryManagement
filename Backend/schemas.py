@@ -32,3 +32,8 @@ class ResetPassword(BaseModel):
 class ChangePassword(BaseModel):
     token: str
     new_password: str
+
+class ProductCreate(BaseModel):
+    name: str
+    stock_level: int
+    supplier_id: int

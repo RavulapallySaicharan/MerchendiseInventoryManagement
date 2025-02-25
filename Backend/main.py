@@ -1,155 +1,354 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, X, Star } from 'lucide-react';
+import models
+import asyncio
+from datetime import datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import secrets
+import smtplib
+import sqlite3
+from typing import Dict, List, Optional
 
-const CustomerPage: React.FC = () => {
-    const [products, setProducts] = useState([]);
-    const [cart, setCart] = useState<{ [key: number]: { product: any, quantity: number } }>({});
-    const [reviews, setReviews] = useState<{ [key: number]: string }>({});
-    const [ratings, setRatings] = useState<{ [key: number]: number }>({});
-    const [showCart, setShowCart] = useState(false);
-    const navigate = useNavigate();
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.orm import Session
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const response = await fetch('http://localhost:8000/products');
-                const data = await response.json();
-                setProducts(data);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            }
-        };
-        fetchProducts();
-    }, []);
+from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
+from database import get_db, engine
+from models import Base, Product, Supplier, User, Role
+from auth_controller import router as auth_router
 
-    const handleLogout = () => {
-        navigate("/");
-    };
+from schemas import ProductCreate
 
-    const handleAddToCart = (product) => {
-        setCart(prevCart => {
-            const updatedCart = { ...prevCart };
-            if (updatedCart[product.id]) {
-                updatedCart[product.id].quantity += 1;
-            } else {
-                updatedCart[product.id] = { product, quantity: 1 };
-            }
-            return updatedCart;
-        });
-    };
+# Database and Email Configuration
+DB_PATH = "app.db"
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+EMAIL_SENDER = "ravulapally.saicharan261@gmail.com"
+EMAIL_PASSWORD = "****"
+EMAIL_RECEIVER = "ravulapally.saicharan261@gmail.com"
 
-    const handleReviewSubmit = async (productId: number) => {
-        try {
-            const response = await fetch("http://localhost:8000/reviews/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify({
-                    product_id: productId,
-                    rating: ratings[productId] || 1,
-                    review_text: reviews[productId] || ""
-                })
-            });
+models.Base.metadata.create_all(bind=engine)
 
-            if (!response.ok) {
-                throw new Error("Failed to submit review");
-            }
+# Initialize FastAPI app
+app = FastAPI()
+app.include_router(auth_router)
 
-            alert("Review submitted successfully!");
-            setReviews(prev => ({ ...prev, [productId]: "" }));
-            setRatings(prev => ({ ...prev, [productId]: 1 }));
-        } catch (error) {
-            console.error("Error submitting review:", error);
-            alert("Failed to submit review");
-        }
-    };
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
-    const handleCheckout = async () => {
-        try {
-            const purchases = Object.values(cart).map(({ product, quantity }) => ({
-                product_id: product.id,
-                quantity
-            }));
+# Security configurations
+SECRET_KEY = "your-secret-key-here"  # In production, use environment variable
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-            const response = await fetch("http://localhost:8000/purchase", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                },
-                body: JSON.stringify(purchases)
-            });
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-            if (!response.ok) {
-                throw new Error("Purchase failed");
-            }
+# Pydantic models
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
 
-            alert("Purchase successful!");
-            setCart({});
-            setShowCart(false);
-        } catch (error) {
-            console.error("Error during checkout:", error);
-            alert("Purchase failed");
-        }
-    };
+class User(BaseModel):
+    email: EmailStr
+    username: str
+    is_active: bool = True
 
-    return (
-        <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
-            <nav className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 flex justify-between items-center shadow-lg rounded-lg">
-                <h1 className="text-3xl font-bold">Customer Portal</h1>
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setShowCart(true)} className="relative">
-                        <ShoppingCart className="w-8 h-8 text-white" />
-                        {Object.keys(cart).length > 0 && (
-                            <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">{Object.keys(cart).length}</span>
-                        )}
-                    </button>
-                    <button onClick={handleLogout} className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg shadow-md">Logout</button>
-                </div>
-            </nav>
-            
-            <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Our Products</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                {products.map(product => (
-                    <div key={product.id} className="bg-white shadow-md rounded-lg p-6 transition-transform transform hover:scale-105">
-                        <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
-                        <h2 className="text-2xl font-semibold text-gray-800">{product.name}</h2>
-                        <p className="text-gray-600 mt-2">{product.description}</p>
-                        <p className="font-bold text-lg text-blue-700 mt-2">Price: ${product.price}</p>
-                        <button onClick={() => handleAddToCart(product)} className="block text-center bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md hover:bg-green-600 transition-all w-full">Add to Cart</button>
-                        <div className="mt-4">
-                            <h3 className="font-bold text-lg">Leave a Review</h3>
-                            <div className="flex gap-2 items-center mt-2">
-                                <input type="number" min="1" max="5" value={ratings[product.id] || 1} onChange={(e) => setRatings(prev => ({ ...prev, [product.id]: parseInt(e.target.value) }))} className="border p-1 w-16 text-center" />
-                                <Star className="text-yellow-500" />
-                            </div>
-                            <textarea value={reviews[product.id] || ""} onChange={(e) => setReviews(prev => ({ ...prev, [product.id]: e.target.value }))} className="w-full border p-2 mt-2" placeholder="Write your review..." />
-                            <button onClick={() => handleReviewSubmit(product.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 shadow-md hover:bg-blue-600 transition-all w-full">Submit Review</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            
-            {showCart && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                        <h2 className="text-xl font-bold">Your Cart</h2>
-                        {Object.keys(cart).length > 0 ? (
-                            <ul>
-                                {Object.values(cart).map(({ product, quantity }) => (
-                                    <li key={product.id} className="border-b py-2">{product.name} - ${product.price} x {quantity}</li>
-                                ))}
-                            </ul>
-                        ) : <p>Your cart is empty.</p>}
-                        <button onClick={handleCheckout} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full">Checkout</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
-export default CustomerPage;
+class ResetPassword(BaseModel):
+    email: EmailStr
+
+class ChangePassword(BaseModel):
+    token: str
+    new_password: str
+
+class ReviewCreate(BaseModel):
+    product_id: int
+    rating: int
+    review_text: str
+
+class ReviewResponse(BaseModel):
+    id: int
+    product_id: int
+    user_id: int
+    rating: int
+    review_text: str
+    created_at: datetime
+    
+    class Config:
+        orm_mode = True
+
+# Helper functions
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+async def check_low_stock():
+    """Checks for low stock products and sends email notifications every 3 Hours."""
+    while True:
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            query = """SELECT name, stock_level, reorder_threshold FROM Products WHERE stock_level < reorder_threshold"""
+            cursor.execute(query)
+            low_stock_items = cursor.fetchall()
+            conn.close()
+
+            if low_stock_items:
+                await send_email_notification(low_stock_items)
+                print("Low stock alert email sent successfully.")
+
+        except Exception as e:
+            print(f"Error checking low stock: {e}")
+
+        await asyncio.sleep(3600 * 3)  # Wait for 3 hours before checking again
+
+async def send_email_notification(products):
+    """Sends an email notification for low stock products."""
+    try:
+        subject = "Low Stock Alert 🚨"
+        body = "The following products are low in stock:\n\n"
+
+        for name, stock, threshold in products:
+            body += f"- {name}: {stock} (Threshold: {threshold})\n"
+
+        msg = MIMEMultipart()
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = EMAIL_RECEIVER
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        # Sending email
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
+        server.quit()
+
+        print("Low stock alert email sent successfully.")
+
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+# API endpoints
+@app.on_event("startup")
+async def start_background_task():
+    """Starts the background task when FastAPI app starts."""
+    asyncio.create_task(check_low_stock())
+
+@app.post("/register", response_model=User)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = get_password_hash(user.password)
+    db_user = models.User(
+        email=user.email,
+        username=user.username,
+        hashed_password=hashed_password
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/token", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/reset-password")
+def request_password_reset(reset_request: ResetPassword, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == reset_request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    reset_token = secrets.token_urlsafe(32)
+    user.reset_token = reset_token
+    db.commit()
+    
+    # In a real application, send this token via email
+    return {"message": "Password reset link has been sent to your email", "token": reset_token}
+
+@app.post("/change-password")
+def change_password(change_request: ChangePassword, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.reset_token == change_request.token).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    user.hashed_password = get_password_hash(change_request.new_password)
+    user.reset_token = None  # Clear the reset token
+    db.commit()
+    return {"message": "Password has been successfully changed"}
+
+@app.post("/reviews/", response_model=ReviewResponse)
+async def create_review(
+    review: ReviewCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Validate rating
+    if not 1 <= review.rating <= 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rating must be between 1 and 5"
+        )
+    
+    # Validate review text
+    if not review.review_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Review text cannot be empty"
+        )
+    
+    # Check if product exists
+    product = db.query(models.Product).filter(models.Product.id == review.product_id).first()
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Create review
+    db_review = models.Review(
+        product_id=review.product_id,
+        user_id=current_user.id,
+        rating=review.rating,
+        review_text=review.review_text
+    )
+    
+    db.add(db_review)
+    db.commit()
+    db.refresh(db_review)
+    
+    return db_review
+
+@app.get("/suppliers", response_model=list[dict])
+def get_suppliers(db: Session = Depends(get_db)):
+    suppliers = db.query(Supplier).all()
+    return [{"id": s.id, "name": s.name} for s in suppliers]
+
+@app.get("/products")
+def get_products(db: Session = Depends(get_db)):
+    products = db.query(Product).all()
+    return products
+
+@app.get("/products/{product_name}")
+def get_product(product_name: str, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.name == product_name).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@app.post("/products")
+def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db)):
+    # Check if the product already exists in the database
+    existing_product = db.query(Product).filter(models.Product.name == product.name).first()
+
+    if existing_product:
+        # ✅ Update quantity if the product exists
+        existing_product.stock_level += product.stock_level
+        db.commit()
+        db.refresh(existing_product)
+        return {"message": "Product quantity updated successfully", "product": existing_product}
+    else:
+        # ✅ Create a new product if it does not exist
+        new_product = Product(
+            name=product.name,
+            stock_level=product.stock_level,
+            supplier_id=product.supplier_id
+        )
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+    return {"message": "Product added successfully", "product": new_product}
+
+@app.post("/purchase")
+def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
+    for purchase in purchases:
+        product_id = purchase.get('product_id')
+        quantity = purchase.get('quantity')
+
+        product = db.query(Product).filter(Product.name == product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product with id {product_id} not found")
+
+        if product.stock_level < quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
+
+        product.stock_level -= quantity
+        db.commit()
+
+    return {"message": "Purchase successful"}
+
+def initialize_db():
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
+
+    Base.metadata.create_all(engine)  # Recreate tables
+
+if __name__ == "__main__":
+    initialize_db()
+    add_suppliers()
+    add_products()
+    add_batches()
+    add_default_roles()
+    add_admin_role()
+
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

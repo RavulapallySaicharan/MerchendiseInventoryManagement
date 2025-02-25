@@ -18,17 +18,17 @@ const HomePage: React.FC = () => {
   const [inventory, setInventory] = useState([])
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/products")
-        const data = await response.json()
-        setInventory(data)
-      } catch (error) {
-        console.error("Error fetching products:", error)
-      }
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/products")
+      const data = await response.json()
+      setInventory(data)
+    } catch (error) {
+      console.error("Error fetching products:", error)
     }
+  }
 
+  useEffect(() => {
     fetchProducts()
     const interval = setInterval(fetchProducts, 5000) // Fetch every 5 seconds
     return () => clearInterval(interval) // Cleanup on unmount
@@ -64,9 +64,9 @@ const HomePage: React.FC = () => {
             <Link to="/batches" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <BatchTracking inventory={inventory} />
             </Link>
-            <Link to="/suppliers" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <SupplierIntegration inventory={inventory} />
-            </Link>
+            <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <SupplierIntegration inventory={inventory} fetchInventory={fetchProducts} />
+            </div>
             <Link
               to="/analytics"
               className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow col-span-full"
