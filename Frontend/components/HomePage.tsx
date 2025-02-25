@@ -16,6 +16,7 @@ import Analytics from "./Analytics"
 const HomePage: React.FC = () => {
   const { user } = useUser()
   const [inventory, setInventory] = useState([])
+  const [photosToApprove, setPhotosToApprove] = useState([])
   const navigate = useNavigate()
 
   const fetchProducts = async () => {
@@ -34,9 +35,69 @@ const HomePage: React.FC = () => {
     return () => clearInterval(interval) // Cleanup on unmount
   }, [])
 
+  useEffect(() => {
+    const fetchPhotosToApprove = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/photos/all')
+        const data = await response.json()
+        setPhotosToApprove(data.filter(photo => photo.approved === 0)) // Only get unapproved photos
+      } catch (error) {
+        console.error('Error fetching photos for approval:', error)
+      }
+    }
+
+    fetchPhotosToApprove()
+  }, [])
+
   const handleLogout = () => {
     navigate("/")
   }
+
+  const handleApprovePhoto = async (photoId: number) => {
+    console.log("PHOTO ID", photoId)
+    try {
+      const response = await fetch(`http://localhost:8000/photos/${photoId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("token")}`,
+          'Content-Type': 'application/json'
+        }
+        // ,
+        // body: JSON.stringify({ category })
+      });
+      if (response.ok) {
+        alert('Photo approved successfully!');
+        // Refresh the list of photos to approve
+        const updatedPhotos = photosToApprove.filter(photo => photo.id !== photoId);
+        setPhotosToApprove(updatedPhotos);
+      } else {
+        alert('Failed to approve photo.');
+      }
+    } catch (error) {
+      console.error('Error approving photo:', error)
+    }
+  };
+
+  const handleRejectPhoto = async (photoId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/photos/${photoId}/reject`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      if (response.ok) {
+        alert('Photo rejected successfully!');
+        // Refresh the list of photos to approve
+        const updatedPhotos = photosToApprove.filter(photo => photo.id !== photoId);
+        setPhotosToApprove(updatedPhotos);
+      } else {
+        alert('Failed to reject photo.');
+      }
+    } catch (error) {
+      console.error('Error rejecting photo:', error)
+    }
+  };
 
   if (user?.role_id === 1) {
     return (
@@ -73,6 +134,21 @@ const HomePage: React.FC = () => {
             >
               <Analytics inventory={inventory} />
             </Link>
+          </div>
+          <div className="container mx-auto p-6 bg-gray-100 mt-6">
+            <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Photos Pending Approval</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              {photosToApprove.map(photo => (
+                <div key={photo.id} className="bg-white shadow-md rounded-lg p-4">
+                  <img src={photo.url} alt="Uploaded" className="w-full h-48 object-cover rounded-lg mb-2" />
+                  <p className="text-gray-600">Category: {photo.category}</p>
+                  <div className="flex justify-between mt-4">
+                    <button onClick={() => handleApprovePhoto(photo.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg">Approve</button>
+                    <button onClick={() => handleRejectPhoto(photo.id)} className="bg-red-500 text-white px-4 py-2 rounded-lg">Reject</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

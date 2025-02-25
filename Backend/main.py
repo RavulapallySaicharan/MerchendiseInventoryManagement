@@ -6,9 +6,9 @@ from email.mime.text import MIMEText
 import secrets
 import smtplib
 import sqlite3
+import os
 from typing import Dict, List, Optional
-
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, File, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -19,10 +19,13 @@ from sqlalchemy.orm import Session
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine
-from models import Base, Product, Supplier, User, Role, LoginActivity
+from models import Base, Product, Supplier, User, Role, LoginActivity, Photo
 from auth_controller import router as auth_router
 
 from schemas import ProductCreate
+
+from fastapi.staticfiles import StaticFiles
+
 
 # Database and Email Configuration
 DB_PATH = "app.db"
@@ -37,6 +40,9 @@ models.Base.metadata.create_all(bind=engine)
 # Initialize FastAPI app
 app = FastAPI()
 app.include_router(auth_router)
+
+# Mount the 'photos' directory to be accessible via '/static/photos'
+app.mount("/static", StaticFiles(directory="photos"), name="static")
 
 # Add CORS middleware
 app.add_middleware(
@@ -347,8 +353,56 @@ def get_login_activity(current_user: User = Depends(get_current_user), db: Sessi
     login_activity = db.query(LoginActivity).filter(LoginActivity.user_id == current_user.id).all()
     return [{"id": activity.id, "user_id": activity.user_id, "timestamp": activity.timestamp} for activity in login_activity]
 
+@app.post("/photos/upload")
+def upload_photo(uploaded_file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Ensure the photos directory exists
+    os.makedirs('photos', exist_ok=True)
+
+    # Save the file to the server or cloud storage
+    # file_location = f"photos/{uploaded_file.filename}"
+    # Save the file to the server
+    file_location = f"photos/{uploaded_file.filename}"
+    with open(file_location, "wb") as file:
+        file.write(uploaded_file.file.read())
+
+    # Store the full URL in the database
+    file_url = f"http://localhost:8000/static/{uploaded_file.filename}"
+
+    # Create a new photo record
+    new_photo = Photo(
+        url=file_url,
+        uploaded_by=current_user.id
+    )
+    db.add(new_photo)
+    db.commit()
+    db.refresh(new_photo)
+
+    return {"message": "Photo uploaded successfully", "photo_id": new_photo.id}
+
+@app.get("/photos")
+def get_photos(category: str = None, db: Session = Depends(get_db)):
+    query = db.query(Photo).filter(Photo.approved == 1)  # Only show approved photos
+    if category:
+        query = query.filter(Photo.category == category)  # Filter by category
+    return query.all()
+
+@app.get("/photos/all")
+def get_all_photos(db: Session = Depends(get_db)):
+    photos = db.query(Photo).all()  # Fetch all photos
+    return [{"id": photo.id, "url": photo.url, "category": photo.category, "approved": photo.approved} for photo in photos]
+
+@app.put("/photos/{photo_id}/approve")
+def approve_photo(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        return {"error": "Photo not found"}
+
+    photo.approved = 1
+    db.commit()
+    return {"message": "Photo approved"}
+
 def initialize_db():
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['photos']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

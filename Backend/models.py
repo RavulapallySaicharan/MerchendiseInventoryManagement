@@ -16,6 +16,7 @@ class User(Base):
     reviews = relationship("Review", back_populates="user")
     role = relationship("Role", back_populates="users")
     login_activity = relationship("LoginActivity", back_populates="user")
+    photos = relationship("Photo", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -102,3 +103,15 @@ class LoginActivity(Base):
     timestamp = Column(TIMESTAMP, server_default=func.now())
 
     user = relationship("User", back_populates="login_activity")
+
+class Photo(Base):
+    __tablename__ = "photos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    url = Column(String, nullable=False)
+    category = Column(String, nullable=True)  # New column for categorization
+    uploaded_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(TIMESTAMP, server_default=func.now())  # Use func.now() to set the current timestamp
+    approved = Column(Integer, default=0)  # 0 = Pending, 1 = Approved
+
+    user = relationship("User", back_populates="photos")
