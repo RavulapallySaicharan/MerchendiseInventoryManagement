@@ -12,6 +12,8 @@ const CustomerPage: React.FC = () => {
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [category, setCategory] = useState("");
     const [photos, setPhotos] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [categories, setCategories] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -32,6 +34,20 @@ const CustomerPage: React.FC = () => {
             }
         };
         fetchData();
+    }, []);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/photos/categories');
+                const data = await response.json();
+                setCategories(data);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+
+        fetchCategories();
     }, []);
 
     const handleLogout = () => navigate("/");
@@ -72,6 +88,10 @@ const CustomerPage: React.FC = () => {
             console.error('Error uploading photo:', error);
         }
     };
+
+    const filteredPhotos = photos.filter(photo => 
+        !selectedCategory || photo.category === selectedCategory
+    );
 
     return (
         <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
@@ -128,8 +148,14 @@ const CustomerPage: React.FC = () => {
             </div>
             
             <h2 className="text-3xl font-bold mt-6 text-center text-gray-800">Photo Gallery</h2>
+            <select onChange={(e) => setSelectedCategory(e.target.value)} className="mt-4">
+                <option value="">All Categories</option>
+                {categories.map((category, index) => (
+                    <option key={index} value={category}>{category}</option>
+                ))}
+            </select>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                {photos.map(photo => (
+                {filteredPhotos.map(photo => (
                     <div key={photo.id} className="bg-white shadow-md rounded-lg p-4">
                         <img src={photo.url} alt="Uploaded" className="w-full h-48 object-cover rounded-lg mb-2" />
                         <p className="text-gray-600">Category: {photo.category}</p>

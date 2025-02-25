@@ -402,6 +402,11 @@ def approve_photo(photo_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Photo approved"}
 
+@app.get("/photos/categories")
+def get_photo_categories(db: Session = Depends(get_db)):
+    categories = db.query(Photo.category).distinct().all()
+    return [category[0] for category in categories]  # Return a list of categories
+
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['photos']])
 
