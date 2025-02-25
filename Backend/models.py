@@ -15,6 +15,7 @@ class User(Base):
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=True, default=2)  # Default to Customer role
     reviews = relationship("Review", back_populates="user")
     role = relationship("Role", back_populates="users")
+    login_activity = relationship("LoginActivity", back_populates="user")
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -92,3 +93,12 @@ class Review(Base):
     # Relationships
     product = relationship("Product", back_populates="reviews")
     user = relationship("User", back_populates="reviews")
+
+class LoginActivity(Base):
+    __tablename__ = 'login_activity'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    timestamp = Column(TIMESTAMP, server_default=func.now())
+
+    user = relationship("User", back_populates="login_activity")

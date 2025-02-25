@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine
-from models import Base, Product, Supplier, User, Role
+from models import Base, Product, Supplier, User, Role, LoginActivity
 from auth_controller import router as auth_router
 
 from schemas import ProductCreate
@@ -123,7 +123,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise credentials_exception
         
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(models.User.email == username).first()
     if user is None:
         raise credentials_exception
     return user
@@ -207,6 +207,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Log the login activity
+    login_activity = models.LoginActivity(user_id=user.id)
+    db.add(login_activity)
+    db.commit()
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
@@ -302,13 +307,13 @@ def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db))
     existing_product = db.query(Product).filter(models.Product.name == product.name).first()
 
     if existing_product:
-        # ✅ Update quantity if the product exists
+        # Update quantity if the product exists
         existing_product.stock_level += product.stock_level
         db.commit()
         db.refresh(existing_product)
         return {"message": "Product quantity updated successfully", "product": existing_product}
     else:
-        # ✅ Create a new product if it does not exist
+        # Create a new product if it does not exist
         new_product = Product(
             name=product.name,
             stock_level=product.stock_level,
@@ -336,6 +341,11 @@ def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
         db.commit()
 
     return {"message": "Purchase successful"}
+
+@app.get("/login-activity", response_model=list[dict])
+def get_login_activity(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    login_activity = db.query(LoginActivity).filter(LoginActivity.user_id == current_user.id).all()
+    return [{"id": activity.id, "user_id": activity.user_id, "timestamp": activity.timestamp} for activity in login_activity]
 
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])

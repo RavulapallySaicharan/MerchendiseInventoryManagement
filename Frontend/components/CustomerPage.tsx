@@ -8,6 +8,7 @@ const CustomerPage: React.FC = () => {
     const [reviews, setReviews] = useState<{ [key: number]: string }>({});
     const [ratings, setRatings] = useState<{ [key: number]: number }>({});
     const [showCart, setShowCart] = useState(false);
+    const [loginActivity, setLoginActivity] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,7 +21,24 @@ const CustomerPage: React.FC = () => {
                 console.error('Error fetching products:', error);
             }
         };
+
+        const fetchLoginActivity = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/login-activity', {
+                    method: 'GET',
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    },
+                });
+                const data = await response.json();
+                setLoginActivity(data);
+            } catch (error) {
+                console.error('Error fetching login activity:', error);
+            }
+        };
+
         fetchProducts();
+        fetchLoginActivity();
     }, []);
 
     const handleLogout = () => {
@@ -111,26 +129,40 @@ const CustomerPage: React.FC = () => {
                 </div>
             </nav>
             
-            <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Our Products</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                {products.map(product => (
-                    <div key={product.id} className="bg-white shadow-md rounded-lg p-6 transition-transform transform hover:scale-105">
-                        <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
-                        <h2 className="text-2xl font-semibold text-gray-800">{product.name}</h2>
-                        <p className="text-gray-600 mt-2">{product.description}</p>
-                        <p className="font-bold text-lg text-blue-700 mt-2">Price: ${product.price}</p>
-                        <button onClick={() => handleAddToCart(product)} className="block text-center bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md hover:bg-green-600 transition-all w-full">Add to Cart</button>
-                        <div className="mt-4">
-                            <h3 className="font-bold text-lg">Leave a Review</h3>
-                            <div className="flex gap-2 items-center mt-2">
-                                <input type="number" min="1" max="5" value={ratings[product.id] || 1} onChange={(e) => setRatings(prev => ({ ...prev, [product.id]: parseInt(e.target.value) }))} className="border p-1 w-16 text-center" />
-                                <Star className="text-yellow-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="col-span-2">
+                    <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Our Products</h1>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                        {products.map(product => (
+                            <div key={product.id} className="bg-white shadow-md rounded-lg p-6 transition-transform transform hover:scale-105">
+                                <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                <h2 className="text-2xl font-semibold text-gray-800">{product.name}</h2>
+                                <p className="text-gray-600 mt-2">{product.description}</p>
+                                <p className="font-bold text-lg text-blue-700 mt-2">Price: ${product.price}</p>
+                                <button onClick={() => handleAddToCart(product)} className="block text-center bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md hover:bg-green-600 transition-all w-full">Add to Cart</button>
+                                <div className="mt-4">
+                                    <h3 className="font-bold text-lg">Leave a Review</h3>
+                                    <div className="flex gap-2 items-center mt-2">
+                                        <input type="number" min="1" max="5" value={ratings[product.id] || 1} onChange={(e) => setRatings(prev => ({ ...prev, [product.id]: parseInt(e.target.value) }))} className="border p-1 w-16 text-center" />
+                                        <Star className="text-yellow-500" />
+                                    </div>
+                                    <textarea value={reviews[product.id] || ""} onChange={(e) => setReviews(prev => ({ ...prev, [product.id]: e.target.value }))} className="w-full border p-2 mt-2" placeholder="Write your review..." />
+                                    <button onClick={() => handleReviewSubmit(product.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 shadow-md hover:bg-blue-600 transition-all w-full">Submit Review</button>
+                                </div>
                             </div>
-                            <textarea value={reviews[product.id] || ""} onChange={(e) => setReviews(prev => ({ ...prev, [product.id]: e.target.value }))} className="w-full border p-2 mt-2" placeholder="Write your review..." />
-                            <button onClick={() => handleReviewSubmit(product.id)} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 shadow-md hover:bg-blue-600 transition-all w-full">Submit Review</button>
-                        </div>
+                        ))}
                     </div>
-                ))}
+                </div>
+                <div className="bg-white shadow-md rounded-lg p-4">
+                    <h2 className="text-xl font-bold">Recent Login Activity</h2>
+                    <ul className="mt-4">
+                        {loginActivity.map((activity) => (
+                            <li key={activity.id} className="border-b py-2">
+                                {activity.timestamp} - {activity.username} logged in
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
             
             {showCart && (
