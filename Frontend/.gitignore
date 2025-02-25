@@ -2,8 +2,6 @@
 
 # dependencies
 /node_modules
-/Frontend/node_modules
-/Backend/app.db
 
 # next.js
 /.next/

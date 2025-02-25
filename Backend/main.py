@@ -8,7 +8,7 @@ import smtplib
 import sqlite3
 import os
 from typing import Dict, List, Optional
-from fastapi import Depends, FastAPI, File, HTTPException, status, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -354,7 +354,7 @@ def get_login_activity(current_user: User = Depends(get_current_user), db: Sessi
     return [{"id": activity.id, "user_id": activity.user_id, "timestamp": activity.timestamp} for activity in login_activity]
 
 @app.post("/photos/upload")
-def upload_photo(uploaded_file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def upload_photo(uploaded_file: UploadFile = File(...), category: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Ensure the photos directory exists
     os.makedirs('photos', exist_ok=True)
 
@@ -371,7 +371,8 @@ def upload_photo(uploaded_file: UploadFile = File(...), db: Session = Depends(ge
     # Create a new photo record
     new_photo = Photo(
         url=file_url,
-        uploaded_by=current_user.id
+        uploaded_by=current_user.id,
+        category=category
     )
     db.add(new_photo)
     db.commit()
