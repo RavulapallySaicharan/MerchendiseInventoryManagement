@@ -44,6 +44,7 @@ app.include_router(auth_router)
 # Mount the 'photos' directory to be accessible via '/static/photos'
 app.mount("/static", StaticFiles(directory="photos"), name="static")
 
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
