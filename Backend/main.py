@@ -31,8 +31,8 @@ from fastapi.staticfiles import StaticFiles
 DB_PATH = "app.db"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_SENDER = "ravulapally.saicharan261@gmail.com"
-EMAIL_PASSWORD = "****"
+EMAIL_SENDER = "velvetvalpo@gmail.com"
+EMAIL_PASSWORD = "srasrfvhbaevwmfe"
 EMAIL_RECEIVER = "ravulapally.saicharan261@gmail.com"
 
 models.Base.metadata.create_all(bind=engine)
