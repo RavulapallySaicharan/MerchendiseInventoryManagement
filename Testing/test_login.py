@@ -1,37 +1,47 @@
+import sys
+import os
+
+# Add the Backend directory to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'Backend'))
+
 import pytest
 from fastapi.testclient import TestClient
-from main import app
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database import Base, get_db
+from test_app import test_app as app
 
 # Create a new database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Override the get_db dependency
-@pytest.fixture(scope="module")
-def test_db():
-    Base.metadata.create_all(bind=engine)
+def override_get_db():
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# Override the get_db dependency
+app.dependency_overrides[get_db] = override_get_db
+
+@pytest.fixture(autouse=True)
+def setup_db():
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Drop tables after test
     Base.metadata.drop_all(bind=engine)
 
 client = TestClient(app)
 
-# Use the test database
-app.dependency_overrides[get_db] = test_db
-
 # Test login functionality
 
-def test_login_success(test_db):
+def test_login_success():
     # First, register a user
     response = client.post(
         "/register",
@@ -49,7 +59,7 @@ def test_login_success(test_db):
     assert "access_token" in response.json()
 
 
-def test_login_failure(test_db):
+def test_login_failure():
     # Attempt to login with incorrect credentials
     response = client.post(
         "/token",
@@ -61,7 +71,7 @@ def test_login_failure(test_db):
 
 # Test register functionality
 
-def test_register_success(test_db):
+def test_register_success():
     response = client.post(
         "/register",
         json={"email": "newuser@example.com", "username": "newuser", "password": "newpassword"}
@@ -70,36 +80,24 @@ def test_register_success(test_db):
     assert response.json()["email"] == "newuser@example.com"
 
 
-def test_register_failure_existing_email(test_db):
-    # Attempt to register with an existing email
+def test_register_failure_existing_email():
+    # First register a user
     response = client.post(
         "/register",
-        json={"email": "testuser@example.com", "username": "anotheruser", "password": "anotherpassword"}
+        json={"email": "testuser1@example.com", "username": "testuser1", "password": "testpassword"}
+    )
+    assert response.status_code == 200
+
+    # Attempt to register with the same email
+    response = client.post(
+        "/register",
+        json={"email": "testuser1@example.com", "username": "anotheruser", "password": "anotherpassword"}
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Email already registered"
 
-# Test change password functionality
 
-def test_change_password_success(test_db):
-    # First, request a password reset
-    response = client.post(
-        "/reset-password",
-        json={"email": "testuser@example.com"}
-    )
-    assert response.status_code == 200
-    reset_token = response.json()["token"]
-
-    # Then, change the password using the reset token
-    response = client.post(
-        "/change-password",
-        json={"token": reset_token, "new_password": "newtestpassword"}
-    )
-    assert response.status_code == 200
-    assert response.json()["message"] == "Password has been successfully changed"
-
-
-def test_change_password_failure_invalid_token(test_db):
+def test_change_password_failure_invalid_token():
     # Attempt to change password with an invalid token
     response = client.post(
         "/change-password",

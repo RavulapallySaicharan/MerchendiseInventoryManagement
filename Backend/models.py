@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Enum, ForeignKey, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, Boolean, Float, Date, Enum, ForeignKey, TIMESTAMP, func, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+import datetime
 
 
 class User(Base):
@@ -17,6 +18,7 @@ class User(Base):
     role = relationship("Role", back_populates="users")
     login_activity = relationship("LoginActivity", back_populates="user")
     photos = relationship("Photo", back_populates="user")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class Role(Base):
     __tablename__ = 'roles'

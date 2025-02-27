@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
 
@@ -41,8 +41,10 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(auth_router)
 
-# Mount the 'photos' directory to be accessible via '/static/photos'
-app.mount("/static", StaticFiles(directory="photos"), name="static")
+# Create photos directory if it doesn't exist and mount it for static files
+PHOTOS_DIR = "photos"
+os.makedirs(PHOTOS_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=PHOTOS_DIR), name="static")
 
 
 # Add CORS middleware
@@ -97,8 +99,7 @@ class ReviewResponse(BaseModel):
     review_text: str
     created_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Helper functions
 def get_password_hash(password: str) -> str:
