@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from reporting_api import router as reporting_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -18,8 +19,8 @@ from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
-from database import get_db, engine
-from models import Base, Product, Supplier, User, Role, LoginActivity, Photo
+from database import get_db, engine, get_session
+from models import Base, Product, Supplier, User, Role, LoginActivity, Photo, Order, OrderItem, StockMovement
 from auth_controller import router as auth_router
 
 from schemas import ProductCreate
@@ -40,6 +41,7 @@ models.Base.metadata.create_all(bind=engine)
 # Initialize FastAPI app
 app = FastAPI()
 app.include_router(auth_router)
+app.include_router(reporting_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -160,6 +162,20 @@ async def check_low_stock():
 
             conn.commit()  # Commit changes
             conn.close()
+
+            db: Session = get_session()
+            for name, stock_level, new_stock_level in restocked_items:
+                product = db.query(Product).filter(Product.name == name).first()
+                if product:
+                    stock_movement = StockMovement(
+                        product_id=product.id,
+                        movement_type="restock",
+                        quantity=product.reorder_threshold
+                    )
+                    db.add(stock_movement)
+            
+            db.commit()
+            db.close()
 
             if low_stock_items:
                 await send_email_notification(low_stock_items)
@@ -329,6 +345,13 @@ def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db))
     existing_product = db.query(Product).filter(models.Product.name == product.name).first()
 
     if existing_product:
+        stock_movement = StockMovement(
+            product_id=existing_product.id,
+            movement_type="supply",
+            quantity=product.stock_level
+        )
+        db.add(stock_movement)
+
         # Update quantity if the product exists
         existing_product.stock_level += product.stock_level
         db.commit()
@@ -341,13 +364,27 @@ def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db))
             stock_level=product.stock_level,
             supplier_id=product.supplier_id
         )
+
+        stock_movement = StockMovement(
+            product_id=new_product.id,
+            movement_type="initial_stock",
+            quantity=product.stock_level
+        )
+        db.add(stock_movement)
         db.add(new_product)
         db.commit()
         db.refresh(new_product)
     return {"message": "Product added successfully", "product": new_product}
 
 @app.post("/purchase")
-def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
+def purchase_items(purchases: List[dict], current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    total_price = 0
+    # Create an order with initial "pending" status
+    order = Order(customer_name=current_user.username, total_price=0, status="pending")
+    db.add(order)
+    db.commit()  # Commit to get order ID
+    db.refresh(order)
+
     for purchase in purchases:
         product_id = purchase.get('product_id')
         quantity = purchase.get('quantity')
@@ -359,8 +396,23 @@ def purchase_items(purchases: List[dict], db: Session = Depends(get_db)):
         if product.stock_level < quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
 
+        price = product.price * quantity
+        total_price += price
+
+        # Create OrderItem entry
+        order_item = OrderItem(order_id=order.id, product_id=product.id, quantity=quantity, price=price)
+        db.add(order_item)
+
+        # Log stock movement (sale)
+        stock_movement = StockMovement(product_id=product.id, movement_type="sale", quantity=-quantity)
+        db.add(stock_movement)
+
         product.stock_level -= quantity
-        db.commit()
+    
+    order.total_price = total_price
+    order.status = "completed"
+    db.add(order)
+    db.commit()
 
     return {"message": "Purchase successful"}
 
@@ -424,7 +476,7 @@ def get_photo_categories(db: Session = Depends(get_db)):
     return [category[0] for category in categories]  # Return a list of categories
 
 def initialize_db():
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['photos']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

@@ -36,6 +36,7 @@ class Product(Base):
     category = Column(String, nullable=False)
     stock_level = Column(Integer, nullable=False)
     reorder_threshold = Column(Integer, nullable=False)
+    cost_price = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'))
     image_url = Column(String, nullable=True)  # Store image file path or URL
@@ -50,6 +51,9 @@ class Product(Base):
 
     # Relationship: A product can have multiple reviews
     reviews = relationship("Review", back_populates="product")
+
+    order_items = relationship("OrderItem", back_populates="product")  # Orders relationship
+    stock_movements = relationship("StockMovement", back_populates="product")  # Track stock changes
 
 class Supplier(Base):
     __tablename__ = 'suppliers'
@@ -117,3 +121,37 @@ class Photo(Base):
     approved = Column(Integer, default=0)  # 0 = Pending, 1 = Approved
 
     user = relationship("User", back_populates="photos")
+
+class Order(Base):
+    __tablename__ = 'orders'
+
+    id = Column(Integer, primary_key=True)
+    customer_name = Column(String, nullable=False)  # Could be linked to a Customer table
+    total_price = Column(Float, nullable=False)
+    status = Column(String, default="pending")  # 'pending', 'completed', 'cancelled'
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    order_items = relationship("OrderItem", back_populates="order")
+
+class OrderItem(Base):
+    __tablename__ = 'order_items'
+
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey('orders.id'))
+    product_id = Column(Integer, ForeignKey('products.id'))
+    quantity = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)  # Store price at time of order
+
+    order = relationship("Order", back_populates="order_items")
+    product = relationship("Product", back_populates="order_items")
+
+class StockMovement(Base):
+    __tablename__ = 'stock_movements'
+
+    id = Column(Integer, primary_key=True)
+    product_id = Column(Integer, ForeignKey('products.id'))
+    movement_type = Column(String, nullable=False)  # 'purchase', 'restock', 'sale', 'adjustment'
+    quantity = Column(Integer, nullable=False)
+    timestamp = Column(TIMESTAMP, server_default=func.now())
+
+    product = relationship("Product", back_populates="stock_movements")
