@@ -108,6 +108,21 @@ const HomePage: React.FC = () => {
               <Package className="w-8 h-8 mr-2" />
               <h1 className="text-2xl font-bold">Merchandise Inventory Manager</h1>
             </div>
+    <div className="export-options">
+        <h3 className="text-lg font-bold">Export Reports</h3>
+        <button
+            onClick={() => window.open("http://localhost:8000/reports/export/csv", "_blank")}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2"
+        >
+            Export as CSV
+        </button>
+        <button
+            onClick={() => window.open("http://localhost:8000/reports/export/pdf", "_blank")}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 ml-2"
+        >
+            Export as PDF
+        </button>
+    </div>
             <button onClick={handleLogout} className="flex items-center bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
               <LogOut className="w-5 h-5 mr-2" />
               Logout
