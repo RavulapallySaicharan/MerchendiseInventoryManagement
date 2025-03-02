@@ -50,7 +50,7 @@ app.mount("/static", StaticFiles(directory=PHOTOS_DIR), name="static")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["http://localhost:3000"],  # Allows all origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -145,6 +145,20 @@ async def check_low_stock():
             query = """SELECT name, stock_level, reorder_threshold FROM Products WHERE stock_level < reorder_threshold"""
             cursor.execute(query)
             low_stock_items = cursor.fetchall()
+
+            restocked_items = []  # To store for email notification
+
+            for name, stock_level, reorder_threshold in low_stock_items:
+                new_stock_level = stock_level + reorder_threshold
+                
+                # Update stock level in the database
+                cursor.execute("""
+                    UPDATE Products SET stock_level = ? WHERE name = ?
+                """, (new_stock_level, name))
+                
+                restocked_items.append((name, stock_level, new_stock_level))  # Store for email notification
+
+            conn.commit()  # Commit changes
             conn.close()
 
             if low_stock_items:
