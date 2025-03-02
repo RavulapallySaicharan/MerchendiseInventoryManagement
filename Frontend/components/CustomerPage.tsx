@@ -52,6 +52,63 @@ const CustomerPage: React.FC = () => {
 
     const handleLogout = () => navigate("/");
 
+    const handleReviewSubmit = async (productId: number) => {
+        try {
+            const response = await fetch("http://localhost:8000/reviews/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    rating: ratings[productId] || 1,
+                    review_text: reviews[productId] || ""
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to submit review");
+            }
+
+            alert("Review submitted successfully!");
+            setReviews(prev => ({ ...prev, [productId]: "" }));
+            setRatings(prev => ({ ...prev, [productId]: 1 }));
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert("Failed to submit review");
+        }
+    };
+
+    const handleCheckout = async () => {
+        try {
+            const purchases = Object.values(cart).map(({ product, quantity }) => ({
+                product_id: product.name,
+                quantity
+            }));
+
+            const response = await fetch("http://localhost:8000/purchase", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify(purchases)
+            });
+
+            if (!response.ok) {
+                throw new Error("Purchase failed");
+            }
+
+            alert("Purchase successful!");
+            setCart({});
+            setShowCart(false);
+        } catch (error) {
+            console.error("Error during checkout:", error);
+            alert("Purchase failed");
+        }
+    };
+
     const handleAddToCart = (product) => {
         setCart(prevCart => {
             const updatedCart = { ...prevCart };
@@ -120,10 +177,49 @@ const CustomerPage: React.FC = () => {
                                 <h2 className="text-2xl font-semibold text-gray-800">{product.name}</h2>
                                 <p className="text-gray-600 mt-2">{product.description}</p>
                                 <p className="font-bold text-lg text-blue-700 mt-2">Price: ${product.price}</p>
+                                <div className="mt-4">
+                            <h3 className="text-lg font-bold">Leave a Review</h3>
+                            <select
+                                value={ratings[product.id] || 1}
+                                onChange={(e) => setRatings(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
+                                className="border p-2 rounded w-full"
+                            >
+                                {[1, 2, 3, 4, 5].map(star => (
+                                    <option key={star} value={star}>{star} Star{star > 1 && 's'}</option>
+                                ))}
+                            </select>
+                            <textarea
+                                value={reviews[product.id] || ""}
+                                onChange={(e) => setReviews(prev => ({ ...prev, [product.id]: e.target.value }))}
+                                className="border p-2 rounded w-full mt-2"
+                                placeholder="Write your review here..."
+                            />
+                            <button
+                                onClick={() => handleReviewSubmit(product.id)}
+                                className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 w-full"
+                            >
+                                Submit Review
+                            </button>
+                            </div>
                                 <button onClick={() => handleAddToCart(product)} className="bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md w-full">Add to Cart</button>
                             </div>
                         ))}
                     </div>
+                    {showCart && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+                        <h2 className="text-xl font-bold">Your Cart</h2>
+                        {Object.keys(cart).length > 0 ? (
+                            <ul>
+                                {Object.values(cart).map(({ product, quantity }) => (
+                                    <li key={product.id} className="border-b py-2">{product.name} - ${product.price} x {quantity}</li>
+                                ))}
+                            </ul>
+                        ) : <p>Your cart is empty.</p>}
+                        <button onClick={handleCheckout} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full">Checkout</button>
+                    </div>
+                </div>
+            )}
                 </div>
                 
                 <div>
