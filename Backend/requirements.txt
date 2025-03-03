@@ -7,3 +7,5 @@ python-multipart
 email-validator
 sqlalchemy
 reportlab
+pyclamd
+PyJWT

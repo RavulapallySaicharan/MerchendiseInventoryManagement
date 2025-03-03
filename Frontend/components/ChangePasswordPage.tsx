@@ -15,7 +15,10 @@ const ChangePasswordPage: React.FC = () => {
       })
       alert("Password changed successfully!")
     } catch (error) {
-      alert("Failed to change password. Please try again.")
+      if (error.response) {
+        alert(error.response.data.detail || "An error occurred.");
+      } else
+        alert("Failed to change password. Please try again.")
     }
   }
 

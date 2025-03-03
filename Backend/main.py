@@ -7,16 +7,19 @@ import secrets
 import smtplib
 import sqlite3
 import os
+import pyclamd
 from typing import Dict, List, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from reporting_api import router as reporting_router
+from user_account_service import router as user_account_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
+from utils import get_password_hash
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine, get_session
@@ -42,6 +45,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.include_router(auth_router)
 app.include_router(reporting_router)
+app.include_router(user_account_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -67,10 +71,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Pydantic models
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
 
 class User(BaseModel):
     email: EmailStr
@@ -83,10 +83,6 @@ class Token(BaseModel):
 
 class ResetPassword(BaseModel):
     email: EmailStr
-
-class ChangePassword(BaseModel):
-    token: str
-    new_password: str
 
 class ReviewCreate(BaseModel):
     product_id: int
@@ -104,9 +100,6 @@ class ReviewResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 # Helper functions
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -219,23 +212,6 @@ async def start_background_task():
     """Starts the background task when FastAPI app starts."""
     asyncio.create_task(check_low_stock())
 
-@app.post("/register", response_model=User)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_password = get_password_hash(user.password)
-    db_user = models.User(
-        email=user.email,
-        username=user.username,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
 @app.post("/token", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
@@ -268,17 +244,6 @@ def request_password_reset(reset_request: ResetPassword, db: Session = Depends(g
     
     # In a real application, send this token via email
     return {"message": "Password reset link has been sent to your email", "token": reset_token}
-
-@app.post("/change-password")
-def change_password(change_request: ChangePassword, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.reset_token == change_request.token).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-    
-    user.hashed_password = get_password_hash(change_request.new_password)
-    user.reset_token = None  # Clear the reset token
-    db.commit()
-    return {"message": "Password has been successfully changed"}
 
 @app.post("/reviews/", response_model=ReviewResponse)
 async def create_review(
@@ -436,6 +401,13 @@ def upload_photo(uploaded_file: UploadFile = File(...), category: str = Form(...
     # Store the full URL in the database
     file_url = f"http://localhost:8000/static/{uploaded_file.filename}"
 
+    # cd = pyclamd.ClamdUnixSocket()
+    # Scan the file
+    # scan_result = cd.scan_file(file_location)
+
+    # if scan_result and list(scan_result.values())[0] != "OK":
+        # raise HTTPException(status_code=400, detail="Malware detected!")
+
     # Create a new photo record
     new_photo = Photo(
         url=file_url,
@@ -476,7 +448,7 @@ def get_photo_categories(db: Session = Depends(get_db)):
     return [category[0] for category in categories]  # Return a list of categories
 
 def initialize_db():
-    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

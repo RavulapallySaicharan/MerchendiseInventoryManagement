@@ -11,6 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    password_history = Column(String)
     is_active = Column(Boolean, default=True)
     reset_token = Column(String, nullable=True)
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=True, default=2)  # Default to Customer role

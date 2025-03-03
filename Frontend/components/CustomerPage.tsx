@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X, Star, Upload, LogOut } from 'lucide-react';
+import EXIF from 'exif-js';
 
 const CustomerPage: React.FC = () => {
     const [products, setProducts] = useState([]);
@@ -121,11 +122,68 @@ const CustomerPage: React.FC = () => {
         });
     };
 
+    const stripMetadata = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+    
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+    
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+    
+                    if (!ctx) {
+                        return reject(new Error("Canvas is not supported"));
+                    }
+    
+                    // Set canvas size to match image
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+    
+                    // Draw image onto canvas (this removes metadata)
+                    ctx.drawImage(img, 0, 0);
+    
+                    // Convert to a new Blob without metadata
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            return reject(new Error("Failed to create stripped file"));
+                        }
+                        
+                        const strippedFile = new File([blob], file.name, { type: file.type });
+                        resolve(strippedFile);
+                    }, file.type);
+                };
+    
+                img.onerror = () => reject(new Error("Failed to load image"));
+            };
+    
+            reader.onerror = () => reject(new Error("Error reading file"));
+        });
+    };    
+
     const handlePhotoUpload = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!photoFile) return;
+        const validFormats = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!validFormats.includes(photoFile.type)) {
+            alert("Only JPEG, PNG, and GIF formats are allowed.");
+            return;
+        }
+
+        // Validate file size (5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (photoFile.size > maxSize) {
+            alert("File size must be less than 5MB.");
+            return;
+        }
+
+        const strippedFile = await stripMetadata(photoFile);
+
         const formData = new FormData();
-        formData.append('uploaded_file', photoFile);
+        formData.append('uploaded_file', strippedFile);
         formData.append('category', category);
         try {
             const response = await fetch('http://localhost:8000/photos/upload', {
