@@ -36,13 +36,14 @@ class Product(Base):
     name = Column(String, nullable=False)
     category = Column(String, nullable=False)
     stock_level = Column(Integer, nullable=False)
+    reserved_stock = Column(Integer, default=0)
     reorder_threshold = Column(Integer, nullable=False)
     cost_price = Column(Float, nullable=False)
     price = Column(Float, nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'))
     image_url = Column(String, nullable=True)  # Store image file path or URL
-    # created_at = Column(TIMESTAMP, server_default=func.now())
-    # updated_at = Column(TIMESTAMP, onupdate=func.now())
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, onupdate=func.now())
 
      # Relationship: Each product belongs to a supplier
     supplier = relationship("Supplier", back_populates="products")

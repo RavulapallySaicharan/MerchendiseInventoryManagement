@@ -149,6 +149,9 @@ const HomePage: React.FC = () => {
             >
               <Analytics inventory={inventory} />
             </Link>
+            <Link to="/approve-purchases" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <h2 className="text-lg font-semibold">Approve Purchases</h2>
+            </Link> 
           </div>
           <div className="container mx-auto p-6 bg-gray-100 mt-6">
             <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Photos Pending Approval</h1>

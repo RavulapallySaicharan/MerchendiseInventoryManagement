@@ -7,6 +7,7 @@ import LoginPage from "./components/LoginPage"
 import HomePage from "./components/HomePage"
 import RegisterPage from "./components/RegisterPage"
 import ChangePasswordPage from "./components/ChangePasswordPage"
+import PurchaseApproval from "./components/PurchaseApproval"
 // import InventoryPage from "./components/InventoryPage"
 // import AlertsPage from "./components/AlertsPage"
 // import BatchesPage from "./components/BatchesPage"
@@ -22,6 +23,7 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/approve-purchases" element={<PurchaseApproval />} />
         {/* <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/batches" element={<BatchesPage />} />

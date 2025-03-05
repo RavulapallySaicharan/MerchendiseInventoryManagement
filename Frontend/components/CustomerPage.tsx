@@ -88,7 +88,7 @@ const CustomerPage: React.FC = () => {
                 quantity
             }));
 
-            const response = await fetch("http://localhost:8000/purchase", {
+            const response = await fetch("http://localhost:8000/reserve", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -274,7 +274,7 @@ const CustomerPage: React.FC = () => {
                                 ))}
                             </ul>
                         ) : <p>Your cart is empty.</p>}
-                        <button onClick={handleCheckout} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full">Checkout</button>
+                        <button onClick={handleCheckout} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full">Reserve</button>
                     </div>
                 </div>
             )}

@@ -9,22 +9,22 @@ import sqlite3
 import os
 import pyclamd
 import utils
-from typing import Dict, List, Optional
+from typing import Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from reporting_api import router as reporting_router
 from user_account_service import router as user_account_router
+from order_api import router as ordering_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
-from sqlalchemy import MetaData, create_engine
 from sqlalchemy.orm import Session
 from utils import get_password_hash
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine, get_session
-from models import Base, Product, Supplier, User, Role, LoginActivity, Photo, Order, OrderItem, StockMovement
+from models import Base, Product, Supplier, User, LoginActivity, Photo, StockMovement
 from auth_controller import router as auth_router
 
 from schemas import ProductCreate
@@ -47,6 +47,7 @@ app = FastAPI()
 app.include_router(auth_router)
 app.include_router(reporting_router)
 app.include_router(user_account_router)
+app.include_router(ordering_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -362,46 +363,6 @@ def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db))
         db.refresh(new_product)
     return {"message": "Product added successfully", "product": new_product}
 
-@app.post("/purchase")
-def purchase_items(purchases: List[dict], current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    total_price = 0
-    # Create an order with initial "pending" status
-    order = Order(customer_name=current_user.username, total_price=0, status="pending")
-    db.add(order)
-    db.commit()  # Commit to get order ID
-    db.refresh(order)
-
-    for purchase in purchases:
-        product_id = purchase.get('product_id')
-        quantity = purchase.get('quantity')
-
-        product = db.query(Product).filter(Product.name == product_id).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Product with id {product_id} not found")
-
-        if product.stock_level < quantity:
-            raise HTTPException(status_code=400, detail=f"Not enough stock for product {product.name}")
-
-        price = product.price * quantity
-        total_price += price
-
-        # Create OrderItem entry
-        order_item = OrderItem(order_id=order.id, product_id=product.id, quantity=quantity, price=price)
-        db.add(order_item)
-
-        # Log stock movement (sale)
-        stock_movement = StockMovement(product_id=product.id, movement_type="sale", quantity=-quantity)
-        db.add(stock_movement)
-
-        product.stock_level -= quantity
-    
-    order.total_price = total_price
-    order.status = "completed"
-    db.add(order)
-    db.commit()
-
-    return {"message": "Purchase successful"}
-
 @app.get("/login-activity", response_model=list[dict])
 def get_login_activity(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     login_activity = db.query(LoginActivity).filter(LoginActivity.user_id == current_user.id).all()
@@ -469,7 +430,7 @@ def get_photo_categories(db: Session = Depends(get_db)):
     return [category[0] for category in categories]  # Return a list of categories
 
 def initialize_db():
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 
