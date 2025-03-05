@@ -1,8 +1,11 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 const PurchaseApproval: React.FC = () => {
+    const navigate = useNavigate()
+    
   const [reservedOrders, setReservedOrders] = useState([])
 
   useEffect(() => {
@@ -47,6 +50,7 @@ const PurchaseApproval: React.FC = () => {
   return (
     <div className="container mx-auto p-6 bg-gray-100 mt-6">
       <h1 className="text-3xl font-bold text-center text-gray-800">Purchase Approvals</h1>
+      <button onClick={() => navigate(-1)} className="bg-gray-500 text-white px-4 py-2 rounded-lg mb-4">← Back</button>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
         {reservedOrders.length === 0 ? (
           <p className="text-gray-600 text-center col-span-full">No pending approvals.</p>
