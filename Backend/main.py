@@ -8,6 +8,7 @@ import smtplib
 import sqlite3
 import os
 import pyclamd
+import utils
 from typing import Dict, List, Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -225,6 +226,26 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     login_activity = models.LoginActivity(user_id=user.id)
     db.add(login_activity)
     db.commit()
+
+    login_time = datetime.now().strftime("%d %b, %I:%M %p %Z")
+
+    #send an email
+    email_message = f"""
+    Hi {user.username},
+
+    We noticed a login to your account {user.email}
+
+    Time: {login_time}
+
+    If this was you
+
+    You can ignore this message. There's no need to take any action.
+
+    Best,
+
+    Team Merchandise Inventory
+    """
+    utils.send_email_notification(user.email, "Login Alert for your Merchandise Inventory account", email_message)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
