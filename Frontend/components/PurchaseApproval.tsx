@@ -47,6 +47,31 @@ const PurchaseApproval: React.FC = () => {
     }
   }
 
+  const handleRejectOrder = async (orderId: number) => {
+    const reason = prompt("Enter rejection reason:")
+    if (!reason) return
+  
+    try {
+      const response = await fetch(`http://localhost:8000/reject-purchase/${orderId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      })
+  
+      if (response.ok) {
+        alert("Order rejected successfully!")
+        setReservedOrders(reservedOrders.filter(order => order.id !== orderId))
+      } else {
+        alert("Failed to reject order.")
+      }
+    } catch (error) {
+      console.error("Error rejecting order:", error)
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 bg-gray-100 mt-6">
       <h1 className="text-3xl font-bold text-center text-gray-800">Purchase Approvals</h1>
@@ -76,6 +101,12 @@ const PurchaseApproval: React.FC = () => {
               >
                 Approve Purchase
               </button>
+              <button
+  onClick={() => handleRejectOrder(order.id)}
+  className="bg-red-500 text-white px-4 py-2 rounded-lg mt-2 w-full"
+>
+  Reject Purchase
+</button>
             </div>
           ))
         )}

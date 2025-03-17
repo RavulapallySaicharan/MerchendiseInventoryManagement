@@ -1,9 +1,11 @@
+from math import prod
 from models import User, Order, Product, OrderItem, StockMovement
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
 from auth import get_current_user
 from sqlalchemy.orm import Session
 from typing import List
+from utils import send_email_notification
 
 router = APIRouter()
 
@@ -72,7 +74,49 @@ def approve_purchase(order_id: int, db: Session = Depends(get_db), current_user:
     db.add(order)
     db.commit()
 
+    email = (
+        db.query(User.email)
+        .join(Order, Order.customer_name == User.username)
+        .filter(Order.id == order_id)
+        .scalar()
+    )
+
+    send_email_notification(email,"Purchase Approved", f"Your purchase has been approved. Order ID: {order_id}")
+
     return {"message": "Purchase approved successfully"}
+
+@router.post("/reject-purchase/{order_id}")
+def reject_purchase(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Check if the user is an admin
+    if current_user.role_id != 1:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    order = db.query(Order).filter(Order.id == order_id, Order.status == "reserved").first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Reserved order not found")
+
+    # Finalize the purchase
+    for item in db.query(OrderItem).filter(OrderItem.order_id == order.id).all():
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if not product:
+            continue  # Product may have been removed
+
+        product.reserved_stock -= item.quantity  # Remove reserved stock
+        product.stock += item.quantity
+
+    order.status = "rejected"  # Mark order as completed
+    db.add(order)
+    db.commit()
+
+    email = (
+        db.query(User.email)
+        .join(Order, Order.customer_name == User.username)
+        .filter(Order.id == order_id)
+        .scalar()
+    )
+
+    send_email_notification(email, "Purchase Rejected", f"Your purchase has been rejected. Order ID: {order_id}")
+    return {"message": "Purchase rejected successfully"}
 
 @router.get("/orders/reserved")
 def get_reserved_orders(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
