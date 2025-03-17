@@ -96,17 +96,18 @@ const CustomerPage: React.FC = () => {
                 },
                 body: JSON.stringify(purchases)
             });
-
+            
+            const result = await response.json();
             if (!response.ok) {
-                throw new Error("Purchase failed");
+                throw new Error(result.message || "Reservation failed");
             }
 
-            alert("Purchase successful!");
+            alert(result.message || "Reservation successful!");
             setCart({});
             setShowCart(false);
         } catch (error) {
-            console.error("Error during checkout:", error);
-            alert("Purchase failed");
+            console.error("Error during reservation:", error);
+            alert(error.message || "Reservation failed");
         }
     };
 
@@ -121,6 +122,27 @@ const CustomerPage: React.FC = () => {
             return updatedCart;
         });
     };
+
+    const handleUpdateQuantity = (productId: number, newQuantity: number) => {
+        setCart(prevCart => {
+            const updatedCart = { ...prevCart };
+            if (newQuantity > 0) {
+                updatedCart[productId].quantity = newQuantity;
+            } else {
+                delete updatedCart[productId]; // Remove item if quantity is set to 0
+            }
+            return updatedCart;
+        });
+    };
+    
+    const handleRemoveFromCart = (productId: number) => {
+        setCart(prevCart => {
+            const updatedCart = { ...prevCart };
+            delete updatedCart[productId];
+            return updatedCart;
+        });
+    };
+    
 
     const stripMetadata = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
@@ -264,20 +286,52 @@ const CustomerPage: React.FC = () => {
                         ))}
                     </div>
                     {showCart && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-                        <h2 className="text-xl font-bold">Your Cart</h2>
-                        {Object.keys(cart).length > 0 ? (
-                            <ul>
-                                {Object.values(cart).map(({ product, quantity }) => (
-                                    <li key={product.id} className="border-b py-2">{product.name} - ${product.price} x {quantity}</li>
-                                ))}
-                            </ul>
-                        ) : <p>Your cart is empty.</p>}
-                        <button onClick={handleCheckout} className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full">Reserve</button>
-                    </div>
-                </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+        <button 
+                onClick={() => setShowCart(false)} 
+                className="absolute top-2 right-2 text-gray-600 hover:text-black"
+            >
+                <X className="w-6 h-6" />
+            </button>
+            <h2 className="text-xl font-bold">Your Cart</h2>
+            {Object.keys(cart).length > 0 ? (
+                <ul>
+                    {Object.entries(cart).map(([productId, { product, quantity }]) => (
+                        <li key={product.id} className="border-b py-2 flex justify-between items-center">
+                            <div>
+                                {product.name} - ${product.price} x 
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={quantity}
+                                    onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
+                                    className="border mx-2 w-12 text-center"
+                                />
+                            </div>
+                            <button 
+                                onClick={() => handleRemoveFromCart(product.id)} 
+                                className="text-red-500 hover:text-red-700"
+                            >
+                                <X size={18} />
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p>Your cart is empty.</p>
             )}
+            <button 
+    onClick={handleCheckout} 
+    className={`bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full ${Object.keys(cart).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`} 
+    disabled={Object.keys(cart).length === 0}
+>
+    Reserve
+</button>
+        </div>
+    </div>
+)}
+
                 </div>
                 
                 <div>
