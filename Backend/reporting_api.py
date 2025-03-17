@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from database import get_db
-from models import Product, OrderItem, StockMovement
+from models import Product, OrderItem, StockMovement, Batch
 from io import StringIO, BytesIO
 import csv
 from fastapi.responses import StreamingResponse
@@ -77,8 +77,6 @@ def profit_analysis(db: Session = Depends(get_db)):
 
     return {"profit_analysis": profit_analysis}
 
-
-# ✅ 4. Export Data in CSV
 @router.get("/reports/export/csv")
 def export_csv(db: Session = Depends(get_db)):
     output = StringIO()
@@ -108,7 +106,6 @@ def export_csv(db: Session = Depends(get_db)):
     
     return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=report.csv"})
 
-# ✅ 5. Export Data in PDF (Using ReportLab)
 @router.get("/reports/export/pdf")
 def export_pdf(db: Session = Depends(get_db)):
     buffer = BytesIO()
@@ -155,3 +152,10 @@ def export_pdf(db: Session = Depends(get_db)):
     buffer.seek(0)
 
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=report.pdf"})
+
+@router.get("/batches/aging-report/")
+def get_batch_aging_report(db: Session = Depends(get_db)):
+    batches = db.query(Batch).order_by(Batch.expiration_date).all()
+    
+    return {"aging_report": batches}
+

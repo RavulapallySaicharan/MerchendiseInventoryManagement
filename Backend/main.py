@@ -16,6 +16,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from reporting_api import router as reporting_router
 from user_account_service import router as user_account_router
 from order_api import router as ordering_router
+from batch_api import router as batch_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -48,6 +49,7 @@ app.include_router(auth_router)
 app.include_router(reporting_router)
 app.include_router(user_account_router)
 app.include_router(ordering_router)
+app.include_router(batch_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -430,6 +432,7 @@ def get_photo_categories(db: Session = Depends(get_db)):
     return [category[0] for category in categories]  # Return a list of categories
 
 def initialize_db():
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables

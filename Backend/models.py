@@ -76,6 +76,7 @@ class Batch(Base):
     __tablename__ = 'batches'
 
     id = Column(Integer, primary_key=True)
+    batch_number = Column(String, unique=True, nullable=False)
     product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
     supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=False)
     quantity_received = Column(Integer, nullable=False)

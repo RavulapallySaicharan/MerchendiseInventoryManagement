@@ -70,10 +70,10 @@ def add_batches():
     session = get_session()
 
     batches = [
-        Batch(product_id=1, supplier_id=1, quantity_received=100, received_date=date(2025, 2, 10), expiration_date=None, batch_status="Active"),
-        Batch(product_id=2, supplier_id=2, quantity_received=50, received_date=date(2025, 2, 5), expiration_date=date(2026, 2, 5), batch_status="Active"),
-        Batch(product_id=3, supplier_id=3, quantity_received=200, received_date=date(2025, 1, 15), expiration_date=None, batch_status="Active"),
-        Batch(product_id=4, supplier_id=4, quantity_received=75, received_date=date(2025, 2, 1), expiration_date=date(2025, 8, 1), batch_status="Active"),
+        Batch(product_id=1, supplier_id=1, batch_number="ABC123", quantity_received=100, received_date=date(2025, 2, 10), expiration_date=None, batch_status="Active"),
+        Batch(product_id=2, supplier_id=2, batch_number="DEF456", quantity_received=50, received_date=date(2025, 2, 5), expiration_date=date(2026, 2, 5), batch_status="Active"),
+        Batch(product_id=3, supplier_id=3, batch_number="GHI789", quantity_received=200, received_date=date(2025, 1, 15), expiration_date=None, batch_status="Active"),
+        Batch(product_id=4, supplier_id=4, batch_number="JKL012", quantity_received=75, received_date=date(2025, 2, 1), expiration_date=date(2025, 8, 1), batch_status="Active"),
     ]
 
     for batch_data in batches:

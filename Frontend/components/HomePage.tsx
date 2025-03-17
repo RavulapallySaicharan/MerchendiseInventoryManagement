@@ -137,12 +137,12 @@ const HomePage: React.FC = () => {
             <Link to="/alerts" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <StockAlerts inventory={inventory} />
             </Link>
-            <Link to="/batches" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <BatchTracking inventory={inventory} />
-            </Link>
             <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <SupplierIntegration inventory={inventory} fetchInventory={fetchProducts} />
             </div>
+            <Link to="/batches" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <h2 className="text-lg font-semibold">Batch Tracking</h2>
+            </Link>
             <Link to="/approve-purchases" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <h2 className="text-lg font-semibold">Approve Purchases</h2>
             </Link>
