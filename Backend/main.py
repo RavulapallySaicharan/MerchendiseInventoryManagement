@@ -433,7 +433,7 @@ def get_photo_categories(db: Session = Depends(get_db)):
 
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

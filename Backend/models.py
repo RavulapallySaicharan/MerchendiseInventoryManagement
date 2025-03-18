@@ -131,7 +131,8 @@ class Order(Base):
     id = Column(Integer, primary_key=True)
     customer_name = Column(String, nullable=False)  # Could be linked to a Customer table
     total_price = Column(Float, nullable=False)
-    status = Column(String, default="pending")  # 'pending', 'completed', 'cancelled'
+    status = Column(String, default="pending")  # 'pending', 'completed', 'cancelled', 'rejected'
+    rejection_reason = Column(String, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
     order_items = relationship("OrderItem", back_populates="order")

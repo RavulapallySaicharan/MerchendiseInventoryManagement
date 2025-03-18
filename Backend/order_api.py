@@ -6,6 +6,10 @@ from auth import get_current_user
 from sqlalchemy.orm import Session
 from typing import List
 from utils import send_email_notification
+from pydantic import BaseModel
+
+class RejectionReason(BaseModel):
+    reason: str
 
 router = APIRouter()
 
@@ -86,7 +90,7 @@ def approve_purchase(order_id: int, db: Session = Depends(get_db), current_user:
     return {"message": "Purchase approved successfully"}
 
 @router.post("/reject-purchase/{order_id}")
-def reject_purchase(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def reject_purchase(order_id: int, rejection_data: RejectionReason, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Check if the user is an admin
     if current_user.role_id != 1:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -102,9 +106,10 @@ def reject_purchase(order_id: int, db: Session = Depends(get_db), current_user: 
             continue  # Product may have been removed
 
         product.reserved_stock -= item.quantity  # Remove reserved stock
-        product.stock += item.quantity
+        product.stock_level += item.quantity
 
     order.status = "rejected"  # Mark order as completed
+    order.rejection_reason = rejection_data.reason
     db.add(order)
     db.commit()
 
