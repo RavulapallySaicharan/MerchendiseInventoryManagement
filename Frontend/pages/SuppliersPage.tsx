@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import SupplierIntegration from "../components/SupplierIntegration"
 import { ArrowLeft } from "lucide-react"
 
 const SuppliersPage: React.FC = () => {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   return (
     <div className="container mx-auto p-4">

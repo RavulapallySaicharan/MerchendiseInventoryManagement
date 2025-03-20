@@ -17,10 +17,10 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
+    // appDir: true,
   },
+  reactStrictMode: true,
+  trailingSlash: true,
 }
 
 mergeConfig(nextConfig, userConfig)

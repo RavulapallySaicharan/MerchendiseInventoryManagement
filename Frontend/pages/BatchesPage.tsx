@@ -1,16 +1,20 @@
 "use client"
 
 import type React from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import BatchTracking from "../components/BatchTracking"
 import { ArrowLeft } from "lucide-react"
+import dynamic from "next/dynamic"
 
-const BatchesPage: React.FC = () => {
-  const navigate = useNavigate()
+// const BatchesPage: React.FC = () => {
+const BatchesPage = dynamic(() => Promise.resolve(BatchesPageComponent), { ssr: false })
+
+const BatchesPageComponent = () => {
+  const router = useRouter()
 
   return (
     <div className="container mx-auto p-4">
-      <button onClick={() => navigate("/home")} className="mb-4 flex items-center text-blue-600 hover:text-blue-800">
+      <button onClick={() => router.push("/home")} className="mb-4 flex items-center text-blue-600 hover:text-blue-800">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Dashboard
       </button>
