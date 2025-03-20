@@ -52,7 +52,7 @@ class Product(Base):
     batches = relationship("Batch", back_populates="product")
 
     # Relationship: A product can have multiple reviews
-    reviews = relationship("Review", back_populates="product")
+    # reviews = relationship("Review", back_populates="product")
 
     order_items = relationship("OrderItem", back_populates="product")  # Orders relationship
     stock_movements = relationship("StockMovement", back_populates="product")  # Track stock changes
@@ -93,15 +93,18 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id = Column(Integer, primary_key=True)
-    product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
+    # product_id = Column(Integer, ForeignKey('products.id'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     rating = Column(Integer, nullable=False)
     review_text = Column(String, nullable=False)
+    review_photo = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, onupdate=func.now())
+    approved = Column(Integer, default=0)  # 0 = Pending, 1 = Approved
+
 
     # Relationships
-    product = relationship("Product", back_populates="reviews")
+    # product = relationship("Product", back_populates="reviews")
     user = relationship("User", back_populates="reviews")
 
 class LoginActivity(Base):

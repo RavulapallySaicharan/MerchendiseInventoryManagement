@@ -17,6 +17,7 @@ from reporting_api import router as reporting_router
 from user_account_service import router as user_account_router
 from order_api import router as ordering_router
 from batch_api import router as batch_router
+from review_api import router as review_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -50,6 +51,7 @@ app.include_router(reporting_router)
 app.include_router(user_account_router)
 app.include_router(ordering_router)
 app.include_router(batch_router)
+app.include_router(review_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -87,19 +89,6 @@ class Token(BaseModel):
 
 class ResetPassword(BaseModel):
     email: EmailStr
-
-class ReviewCreate(BaseModel):
-    product_id: int
-    rating: int
-    review_text: str
-
-class ReviewResponse(BaseModel):
-    id: int
-    product_id: int
-    user_id: int
-    rating: int
-    review_text: str
-    created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -269,48 +258,6 @@ def request_password_reset(reset_request: ResetPassword, db: Session = Depends(g
     # In a real application, send this token via email
     return {"message": "Password reset link has been sent to your email", "token": reset_token}
 
-@app.post("/reviews/", response_model=ReviewResponse)
-async def create_review(
-    review: ReviewCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    # Validate rating
-    if not 1 <= review.rating <= 5:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rating must be between 1 and 5"
-        )
-    
-    # Validate review text
-    if not review.review_text.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Review text cannot be empty"
-        )
-    
-    # Check if product exists
-    product = db.query(models.Product).filter(models.Product.id == review.product_id).first()
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found"
-        )
-    
-    # Create review
-    db_review = models.Review(
-        product_id=review.product_id,
-        user_id=current_user.id,
-        rating=review.rating,
-        review_text=review.review_text
-    )
-    
-    db.add(db_review)
-    db.commit()
-    db.refresh(db_review)
-    
-    return db_review
-
 @app.get("/suppliers", response_model=list[dict])
 def get_suppliers(db: Session = Depends(get_db)):
     suppliers = db.query(Supplier).all()
@@ -434,6 +381,8 @@ def get_photo_categories(db: Session = Depends(get_db)):
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 
