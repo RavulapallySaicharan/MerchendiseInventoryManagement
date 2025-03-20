@@ -19,23 +19,28 @@ const CustomerPage: React.FC = () => {
     const [photos, setPhotos] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [categories, setCategories] = useState([]);
+    const [reservedOrders, setReservedOrders] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [productsRes, loginRes, photosRes, reviewsRes] = await Promise.all([
+                const [productsRes, loginRes, photosRes, reviewsRes, ordersRes] = await Promise.all([
                     fetch('http://localhost:8000/products').then(res => res.json()),
                     fetch('http://localhost:8000/login-activity', {
                         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                     }).then(res => res.json()),
                     fetch('http://localhost:8000/photos').then(res => res.json()),
                     fetch('http://localhost:8000/reviews').then(res => res.json()),
+                    fetch('http://localhost:8000/orders/customer', {
+                        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                    }).then(res => res.json())
                 ]);
                 setProducts(productsRes);
                 setLoginActivity(loginRes);
                 setPhotos(photosRes);
                 setReviews(Array.isArray(reviewsRes) ? reviewsRes : []);
+                setReservedOrders(ordersRes);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -112,6 +117,13 @@ const CustomerPage: React.FC = () => {
             alert(result.message || "Reservation successful!");
             setCart({});
             setShowCart(false);
+
+            const [ordersRes] = await Promise.all([
+                fetch('http://localhost:8000/orders/customer', {
+                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                }).then(res => res.json())
+            ]);
+            setReservedOrders(ordersRes);
         } catch (error) {
             console.error("Error during reservation:", error);
             alert(error.message || "Reservation failed");
@@ -381,7 +393,6 @@ const CustomerPage: React.FC = () => {
             <div className="mt-10">
                 <h1 className="text-3xl font-bold text-center text-gray-800">Customer Reviews</h1>
 
-                {/* Submit a Review Inside Customer Reviews */}
                 <div className="mt-6 bg-white shadow-md rounded-lg p-6">
                     <h2 className="text-2xl font-semibold text-gray-800">Submit a Review</h2>
                     <form onSubmit={handleReviewSubmit} className="flex flex-col items-center gap-4 mt-4">
@@ -422,44 +433,29 @@ const CustomerPage: React.FC = () => {
             {/* New Order History Section */}
             <div className="mt-10 bg-white shadow-md rounded-lg p-6">
                 <h1 className="text-3xl font-bold text-center text-gray-800">Order History</h1>
-                {/* Order history details will be populated here */}
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                    {reservedOrders.length === 0 ? (
+                        <p className="text-gray-600 text-center col-span-full">No pending approvals.</p>
+                    ) : (
+                        reservedOrders.map(order => (
+                            <div key={order.id} className="bg-white shadow-md rounded-lg p-4">
+                                <h2 className="text-xl font-semibold">Order ID: {order.id}</h2>
+                                <p className="text-gray-700">Customer: {order.customer_name}</p>
+                                <p className="text-gray-700">Total Price: ₹{order.total_price}</p>
+                                <p className="text-gray-700">Status: {order.status}</p>
 
-
-            {/* <div className="mt-10">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Submit a Review</h1>
-                <form onSubmit={handleReviewSubmit} className="flex flex-col items-center gap-4 mt-4">
-                    <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="border p-2 rounded w-full">
-                        {[1, 2, 3, 4, 5].map(star => (
-                            <option key={star} value={star}>{star} Star{star > 1 && 's'}</option>
-                        ))}
-                    </select>
-                    <textarea
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        className="border p-2 rounded w-full"
-                        placeholder="Write your review here..."
-                    />
-                    <input type="file" accept="image/*" onChange={(e) => setReviewPhoto(e.target.files![0])} className="border p-2 rounded" />
-                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                        <Upload /> Submit Review
-                    </button>
-                </form>
-            </div>
-
-            <div className="mt-10">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Customer Reviews</h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {reviews.map(review => (
-                        <div key={review.id} className="bg-white shadow-md rounded-lg p-6">
-                            <p className="text-gray-600">{review.review_text}</p>
-                            <p className="font-bold">Rating: {review.rating} ⭐</p>
-                            {review.review_photo && <img src={review.review_photo} alt="Review" className="w-full h-48 object-cover rounded-lg mt-2" />}
-                        </div>
-                    ))}
+                                <ul className="mt-2">
+                                    {order.items.map(item => (
+                                        <li key={item.id} className="text-gray-600">
+                                            {item.product_name} - {item.quantity} pcs
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))
+                    )}
                 </div>
-            </div> */}
-
+            </div>
         </div>
     );
 };

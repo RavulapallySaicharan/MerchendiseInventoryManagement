@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 
 const PurchaseApproval: React.FC = () => {
-    const navigate = useNavigate()
-    
+  const navigate = useNavigate()
+
   const [reservedOrders, setReservedOrders] = useState([])
 
   useEffect(() => {
@@ -50,7 +50,7 @@ const PurchaseApproval: React.FC = () => {
   const handleRejectOrder = async (orderId: number) => {
     const reason = prompt("Enter rejection reason:")
     if (!reason) return
-  
+
     try {
       const response = await fetch(`http://localhost:8000/reject-purchase/${orderId}`, {
         method: "POST",
@@ -60,7 +60,7 @@ const PurchaseApproval: React.FC = () => {
         },
         body: JSON.stringify({ reason }),
       })
-  
+
       if (response.ok) {
         alert("Order rejected successfully!")
         setReservedOrders(reservedOrders.filter(order => order.id !== orderId))
@@ -102,11 +102,11 @@ const PurchaseApproval: React.FC = () => {
                 Approve Purchase
               </button>
               <button
-  onClick={() => handleRejectOrder(order.id)}
-  className="bg-red-500 text-white px-4 py-2 rounded-lg mt-2 w-full"
->
-  Reject Purchase
-</button>
+                onClick={() => handleRejectOrder(order.id)}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg mt-2 w-full"
+              >
+                Reject Purchase
+              </button>
             </div>
           ))
         )}

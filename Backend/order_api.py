@@ -150,3 +150,42 @@ def get_reserved_orders(db: Session = Depends(get_db), current_user=Depends(get_
 
     return order_list
 
+@router.get("/orders/customer")
+def get_customer_orders(
+    db: Session = Depends(get_db), 
+    current_user=Depends(get_current_user)
+):
+    
+    orders = (
+        db.query(Order)
+        .filter(Order.customer_name==current_user.username)
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+    
+    order_list = []
+    for order in orders:
+        items = (
+            db.query(OrderItem, Product.name)
+            .join(Product, OrderItem.product_id == Product.id)
+            .filter(OrderItem.order_id == order.id)
+            .all()
+        )
+        
+        order_list.append({
+            "id": order.id,
+            "customer_name": order.customer_name,
+            "total_price": order.total_price,
+            "status": order.status,
+            "items": [
+                {
+                    "product_id": item.OrderItem.product_id,
+                    "product_name": item.name,
+                    "quantity": item.OrderItem.quantity,
+                    "price": item.OrderItem.price
+                }
+                for item in items
+            ]
+        })
+    
+    return order_list
