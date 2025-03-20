@@ -11,6 +11,7 @@ import PurchaseApproval from "./components/PurchaseApproval"
 // import InventoryPage from "./components/InventoryPage"
 // import AlertsPage from "./components/AlertsPage"
 import BatchTracking from "./components/BatchTracking"
+import CustomerReviewApproval from "./components/CustomerReviewApproval"
 // import SuppliersPage from "./components/SuppliersPage"
 // import AnalyticsPage from "./components/AnalyticsPage"
 
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/approve-purchases" element={<PurchaseApproval />} />
+        <Route path="/approve-customer-reviews" element={<CustomerReviewApproval />} />
         <Route path="/batches" element={<BatchTracking />} />
         {/* <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/alerts" element={<AlertsPage />} />

@@ -373,6 +373,16 @@ def approve_photo(photo_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Photo approved"}
 
+@app.put("/photos/{photo_id}/reject")
+def reject_photo(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not photo:
+        return {"error": "Photo not found"}
+
+    photo.approved = -1
+    db.commit()
+    return {"message": "Photo rejected"}
+
 @app.get("/photos/categories")
 def get_photo_categories(db: Session = Depends(get_db)):
     categories = db.query(Photo.category).distinct().all()
@@ -381,8 +391,8 @@ def get_photo_categories(db: Session = Depends(get_db)):
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
-    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
-    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

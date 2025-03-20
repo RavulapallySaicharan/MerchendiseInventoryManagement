@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
   const handleRejectPhoto = async (photoId: number) => {
     try {
       const response = await fetch(`http://localhost:8000/photos/${photoId}/reject`, {
-        method: 'DELETE',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         }
@@ -145,6 +145,9 @@ const HomePage: React.FC = () => {
             </Link>
             <Link to="/approve-purchases" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <h2 className="text-lg font-semibold">Approve Purchases</h2>
+            </Link>
+            <Link to="/approve-customer-reviews" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <h2 className="text-lg font-semibold">Approve Customer Reviews</h2>
             </Link>
             <Link
               to="/analytics"

@@ -31,11 +31,16 @@ router = APIRouter()
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "review_photos"
 os.makedirs(PHOTOS_DIR, exist_ok=True)
-router.mount("/static", StaticFiles(directory=PHOTOS_DIR), name="static")
+router.mount("/review/static", StaticFiles(directory=PHOTOS_DIR), name="review_static")
 
 @router.get("/reviews/", response_model=List[ReviewResponse])
 async def get_reviews(db: Session = Depends(get_db)):
     return db.query(Review).filter(Review.approved == 1).all()
+
+# @router.get("/reviews/all", response_model=List[ReviewResponse])
+@router.get("/reviews/all")
+async def get_all_reviews(db: Session = Depends(get_db)):
+    return db.query(Review).all()
 
 @router.post("/reviews/upload", response_model=ReviewResponse)
 async def create_review(
@@ -73,7 +78,7 @@ async def create_review(
         file_location = f"{PHOTOS_DIR}/{review_photo.filename}"
         with open(file_location, "wb") as file:
             file.write(review_photo.file.read())
-        review_photo_url = f"http://localhost:8000/static/{review_photo.filename}"
+        review_photo_url = f"http://localhost:8000/review/static/{review_photo.filename}"
     
     # Create review
     db_review = Review(
@@ -99,3 +104,13 @@ def approve_review(review_id: int, db: Session = Depends(get_db)):
     review.approved = 1
     db.commit()
     return {"message": "Review approved"}
+
+@router.put("/reviews/{review_id}/reject")
+def reject_review(review_id: int, db: Session = Depends(get_db)):
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        return {"error": "Review not found"}
+
+    review.approved = -1
+    db.commit()
+    return {"message": "Review rejected"}
