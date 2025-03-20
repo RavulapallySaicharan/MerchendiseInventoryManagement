@@ -189,3 +189,30 @@ def get_customer_orders(
         })
     
     return order_list
+
+
+@router.put("/orders/{order_id}/cancel")
+def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+    if order.status == "completed":
+        raise HTTPException(status_code=400, detail="Only pending orders can be cancelled.")
+    order.status = "cancelled"
+    db.add(order)
+    db.commit()
+    return {"message": "Order cancelled successfully."}
+
+@router.post("/orders/{order_id}/reorder")
+def reorder(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+    if order.status != "completed":
+        raise HTTPException(status_code=400, detail="Only completed orders can be reordered.")
+    new_order = order.copy()
+    new_order.id = max(o.id for o in orders) + 1  # Assign new ID
+    new_order.status = "pending"
+    db.add(new_order)
+    db.commit()
+    return {"message": "Order reordered successfully.", "new_order_id": new_order.id}

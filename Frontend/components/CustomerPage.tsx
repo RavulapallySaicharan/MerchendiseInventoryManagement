@@ -249,6 +249,52 @@ const CustomerPage: React.FC = () => {
         !selectedCategory || photo.category === selectedCategory
     );
 
+    const handleCancelOrder = async (orderId: number) => {
+        try {
+            const response = await fetch(`http://localhost:8000/orders/${orderId}/cancel`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
+                 }
+            });
+
+            if (response.ok) {
+                alert("Order canceled successfully!");
+                setReservedOrders(reservedOrders.map(order =>
+                    order.id === orderId ? { ...order, status: "cancelled" } : order
+                ));
+            } else {
+                const data = await response.json();
+                alert(`Error: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error("Error canceling order:", error);
+        }
+    };
+
+    const handleReorder = async (orderId: number) => {
+        try {
+            const response = await fetch(`http://localhost:8000/orders/${orderId}/reorder`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
+                 },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert("Order reordered successfully!");
+                fetchOrders(); // Refresh order list
+            } else {
+                const data = await response.json();
+                alert(`Error: ${data.detail}`);
+            }
+        } catch (error) {
+            console.error("Error reordering:", error);
+        }
+    };
+
+
     return (
         <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
             <nav className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 flex justify-between items-center shadow-lg rounded-lg">
@@ -451,6 +497,25 @@ const CustomerPage: React.FC = () => {
                                         </li>
                                     ))}
                                 </ul>
+                                {/* Show Cancel button for Reserved orders */}
+                                {order.status === "reserved" && (
+                                    <button
+                                        onClick={() => handleCancelOrder(order.id)}
+                                        className="bg-red-500 text-white px-4 py-2 rounded-lg mt-4 w-full"
+                                    >
+                                        Cancel Order
+                                    </button>
+                                )}
+
+                                {/* Show Reorder button for Completed orders */}
+                                {order.status === "completed" && (
+                                    <button
+                                        onClick={() => handleReorder(order.id)}
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full"
+                                    >
+                                        Reorder
+                                    </button>
+                                )}
                             </div>
                         ))
                     )}
