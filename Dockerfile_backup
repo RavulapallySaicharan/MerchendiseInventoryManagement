@@ -8,10 +8,6 @@ RUN npm ci --legacy-peer-deps
 RUN npm install react react-dom react-router-dom --legacy-peer-deps
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
-# RUN npm run export
-EXPOSE 3000
-
-CMD ["npm", "run", "start"]
 
 
 # Step 2: Set up FastAPI backend
