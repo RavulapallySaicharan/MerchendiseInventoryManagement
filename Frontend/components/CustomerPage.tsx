@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X, Star, Upload, LogOut } from 'lucide-react';
-import EXIF from 'exif-js';
 
 const CustomerPage: React.FC = () => {
     const [products, setProducts] = useState([]);
@@ -173,11 +172,12 @@ const CustomerPage: React.FC = () => {
                 img.src = event.target?.result as string;
 
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                    useEffect(() => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
 
-                    if (!ctx) {
-                        return reject(new Error("Canvas is not supported"));
+                        if (!ctx) {
+                            return reject(new Error("Canvas is not supported"));
                     }
 
                     // Set canvas size to match image
@@ -196,6 +196,7 @@ const CustomerPage: React.FC = () => {
                         const strippedFile = new File([blob], file.name, { type: file.type });
                         resolve(strippedFile);
                     }, file.type);
+                }, []);
                 };
 
                 img.onerror = () => reject(new Error("Failed to load image"));
@@ -487,7 +488,7 @@ const CustomerPage: React.FC = () => {
                             <div key={order.id} className="bg-white shadow-md rounded-lg p-4">
                                 <h2 className="text-xl font-semibold">Order ID: {order.id}</h2>
                                 <p className="text-gray-700">Customer: {order.customer_name}</p>
-                                <p className="text-gray-700">Total Price: ₹{order.total_price}</p>
+                                <p className="text-gray-700">Total Price: ${order.total_price}</p>
                                 <p className="text-gray-700">Status: {order.status}</p>
 
                                 <ul className="mt-2">

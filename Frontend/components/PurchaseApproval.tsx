@@ -84,7 +84,7 @@ const PurchaseApproval: React.FC = () => {
             <div key={order.id} className="bg-white shadow-md rounded-lg p-4">
               <h2 className="text-xl font-semibold">Order ID: {order.id}</h2>
               <p className="text-gray-700">Customer: {order.customer_name}</p>
-              <p className="text-gray-700">Total Price: ₹{order.total_price}</p>
+              <p className="text-gray-700">Total Price: ${order.total_price}</p>
               <p className="text-gray-700">Status: {order.status}</p>
 
               <ul className="mt-2">
