@@ -18,6 +18,7 @@ from user_account_service import router as user_account_router
 from order_api import router as ordering_router
 from batch_api import router as batch_router
 from review_api import router as review_router
+from product_api import router as product_router
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -52,6 +53,7 @@ app.include_router(user_account_router)
 app.include_router(ordering_router)
 app.include_router(batch_router)
 app.include_router(review_router)
+app.include_router(product_router)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"

@@ -108,21 +108,21 @@ const HomePage: React.FC = () => {
               <Package className="w-8 h-8 mr-2" />
               <h1 className="text-2xl font-bold">Merchandise Inventory Manager</h1>
             </div>
-    <div className="export-options">
-        <h3 className="text-lg font-bold">Export Reports</h3>
-        <button
-            onClick={() => window.open("http://localhost:8000/reports/export/csv", "_blank")}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2"
-        >
-            Export as CSV
-        </button>
-        <button
-            onClick={() => window.open("http://localhost:8000/reports/export/pdf", "_blank")}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 ml-2"
-        >
-            Export as PDF
-        </button>
-    </div>
+            <div className="export-options">
+              <h3 className="text-lg font-bold">Export Reports</h3>
+              <button
+                onClick={() => window.open("http://localhost:8000/reports/export/csv", "_blank")}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2"
+              >
+                Export as CSV
+              </button>
+              <button
+                onClick={() => window.open("http://localhost:8000/reports/export/pdf", "_blank")}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 ml-2"
+              >
+                Export as PDF
+              </button>
+            </div>
             <button onClick={handleLogout} className="flex items-center bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
               <LogOut className="w-5 h-5 mr-2" />
               Logout
@@ -131,9 +131,13 @@ const HomePage: React.FC = () => {
         </nav>
         <div className="container mx-auto p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link to="/inventory" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+            <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <Link to="/inventory" className="block">
+                <h2 className="text-lg font-semibold">Inventory</h2>
+              </Link>
               <InventoryList inventory={inventory} />
-            </Link>
+            </div>
+
             <Link to="/alerts" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <StockAlerts inventory={inventory} />
             </Link>
@@ -154,7 +158,7 @@ const HomePage: React.FC = () => {
               className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow col-span-full"
             >
               <Analytics inventory={inventory} />
-            </Link> 
+            </Link>
           </div>
           <div className="container mx-auto p-6 bg-gray-100 mt-6">
             <h1 className="text-3xl font-bold mt-6 text-center text-gray-800">Photos Pending Approval</h1>

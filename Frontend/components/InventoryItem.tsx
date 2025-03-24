@@ -19,7 +19,7 @@ const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
   return (
     <div className={`border rounded-md p-2 ${isLowStock ? "bg-red-100" : "bg-gray-50"}`}>
       <div className="flex items-center space-x-2">
-        <Image src={item.image_url || "/placeholder.svg"} alt={item.name} width={50} height={50} className="rounded-md" />
+        <Image src={item.image_url || "/placeholder.svg"} alt={item.name} width={50} height={50} className="rounded-md" unoptimized />
         <div>
           <h3 className="font-semibold text-sm">{item.name}</h3>
           <p className="text-xs">Quantity: {item.stock_level}</p>

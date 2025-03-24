@@ -7,7 +7,7 @@ export function middleware(req: NextRequest) {
   // Add the CSP header
   res.headers.set(
     "Content-Security-Policy",
-    "default-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' data:; style-src 'self' 'unsafe-inline' data:; connect-src 'self' http://localhost:8000;"
+    "default-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' data:; style-src 'self' 'unsafe-inline' data:; img-src 'self' http://localhost:8000 data:; connect-src 'self' http://localhost:8000;"
   );
 
   return res; // Return the response object
