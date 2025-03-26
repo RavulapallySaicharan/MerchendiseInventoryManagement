@@ -34,6 +34,7 @@ from schemas import ProductCreate
 
 from fastapi.staticfiles import StaticFiles
 
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Database and Email Configuration
 DB_PATH = "app.db"
@@ -47,6 +48,10 @@ models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Attach the Prometheus instrumentator
+Instrumentator().instrument(app).expose(app)
+
 app.include_router(auth_router)
 app.include_router(reporting_router)
 app.include_router(user_account_router)
@@ -54,6 +59,7 @@ app.include_router(ordering_router)
 app.include_router(batch_router)
 app.include_router(review_router)
 app.include_router(product_router)
+
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -91,6 +97,15 @@ class Token(BaseModel):
 
 class ResetPassword(BaseModel):
     email: EmailStr
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class SupplierCreate(BaseModel):
+    name: str
+    contact_person: str
+    phone: str
+    email: EmailStr
+    address: str
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -264,6 +279,14 @@ def request_password_reset(reset_request: ResetPassword, db: Session = Depends(g
 def get_suppliers(db: Session = Depends(get_db)):
     suppliers = db.query(Supplier).all()
     return [{"id": s.id, "name": s.name} for s in suppliers]
+
+@app.post("/suppliers/add", response_model=list[dict])
+def add_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
+    new_supplier = Supplier(**supplier.model_dump())
+    db.add(new_supplier)
+    db.commit()
+    db.refresh(new_supplier)
+    return {"message": "Supplier added successfully", "supplier": new_supplier}
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db)):

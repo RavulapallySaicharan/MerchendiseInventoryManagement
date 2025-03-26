@@ -9,3 +9,4 @@ sqlalchemy
 reportlab
 pyclamd
 PyJWT
+prometheus_fastapi_instrumentator
