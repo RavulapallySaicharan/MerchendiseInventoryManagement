@@ -189,18 +189,4 @@ def export_pdf(
     filename = f"report_{date_range.start_date}_{date_range.end_date}.pdf" if date_range.start_date and date_range.end_date else "report.pdf"
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-@router.get("/batches/aging-report/")
-def get_batch_aging_report(
-    date_range: DateRangeParams = Depends(),
-    db: Session = Depends(get_db)
-):
-    query = db.query(Batch)
-    
-    if date_range.start_date:
-        query = query.filter(Batch.created_at >= date_range.start_date)
-    if date_range.end_date:
-        query = query.filter(Batch.created_at <= date_range.end_date)
-        
-    batches = query.order_by(Batch.expiration_date).all()
-    return {"aging_report": batches}
 
