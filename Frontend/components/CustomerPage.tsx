@@ -538,7 +538,7 @@ const CustomerPage: React.FC = () => {
                                             </span>
                                         </div>
                                         <p className="text-gray-700">Total: ${order.total_price}</p>
-                                        <p className="text-gray-700">Date: {new Date(order.created_at).toLocaleDateString()}</p>
+                                        {/* <p className="text-gray-700">Date: {new Date(order.created_at).toLocaleDateString()}</p> */}
                                         <ul className="mt-4 space-y-2">
                                             {order.items.map(item => (
                                                 <li key={item.id} className="text-gray-600 flex items-center gap-2">

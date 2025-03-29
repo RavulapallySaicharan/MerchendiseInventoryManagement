@@ -205,12 +205,14 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
 
 @router.post("/orders/{order_id}/reorder")
 def reorder(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    orders = db.query(Order).all()
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
     if order.status != "completed":
         raise HTTPException(status_code=400, detail="Only completed orders can be reordered.")
-    new_order = order.copy()
+    # new_order = order.copy()
+    new_order = Order(**{k: v for k, v in vars(order).items() if not k.startswith("_")})
     new_order.id = max(o.id for o in orders) + 1  # Assign new ID
     new_order.status = "pending"
     db.add(new_order)
