@@ -17,13 +17,30 @@ const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
   const isLowStock = item.stock_level <= item.reorder_threshold
 
   return (
-    <div className={`border rounded-md p-2 ${isLowStock ? "bg-red-100" : "bg-gray-50"}`}>
-      <div className="flex items-center space-x-2">
-        <Image src={item.image_url || "/placeholder.svg"} alt={item.name} width={50} height={50} className="rounded-md" unoptimized />
-        <div>
-          <h3 className="font-semibold text-sm">{item.name}</h3>
-          <p className="text-xs">Quantity: {item.stock_level}</p>
+    <div className={`w-full h-24 border rounded-md p-3 flex items-center space-x-4 ${isLowStock ? "bg-red-100" : "bg-gray-50"}`}>
+      <div className="w-16 h-16 flex-shrink-0">
+        <Image 
+          src={item.image_url || "/placeholder.svg"} 
+          alt={item.name} 
+          width={64} 
+          height={64} 
+          className="rounded-md object-cover w-full h-full" 
+          unoptimized 
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-sm truncate">{item.name}</h3>
+        <div className="mt-1 space-y-1">
+          <p className="text-xs text-gray-600">Quantity: {item.stock_level}</p>
+          <p className="text-xs text-gray-500">Supplier: {item.supplier}</p>
         </div>
+      </div>
+      <div className="flex-shrink-0">
+        <span className={`px-2 py-1 rounded-full text-xs ${
+          isLowStock ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+        }`}>
+          {isLowStock ? "Low Stock" : "In Stock"}
+        </span>
       </div>
     </div>
   )
