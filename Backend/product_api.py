@@ -34,6 +34,7 @@ async def upload_image(uploaded_file: UploadFile = File(...), db: Session = Depe
     # Create a new photo record
     new_photo = Photo(
         url=file_url,
+        approved=1,
         # uploaded_by=current_user.id,
         # category=category
     )

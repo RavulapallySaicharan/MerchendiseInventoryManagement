@@ -10,7 +10,7 @@ import os
 import pyclamd
 import utils
 from typing import Optional
-from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from reporting_api import router as reporting_router
@@ -223,38 +223,47 @@ async def start_background_task():
     asyncio.create_task(check_low_stock())
 
 @app.post("/token", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
+
+    ip_address = request.client.host
+    user_agent = request.headers.get("user-agent", "Unknown Device")
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    last_login = db.query(models.LoginActivity).filter(models.LoginActivity.user_id == user.id).order_by(models.LoginActivity.timestamp.desc()).first()
+    is_new_device = last_login and (last_login.ip_address != ip_address or last_login.user_agent != user_agent)
+
     # Log the login activity
-    login_activity = models.LoginActivity(user_id=user.id)
+    login_activity = models.LoginActivity(user_id=user.id, ip_address=ip_address, user_agent=user_agent)
     db.add(login_activity)
     db.commit()
 
-    login_time = datetime.now().strftime("%d %b, %I:%M %p %Z")
+    if not last_login or is_new_device: 
+        login_time = datetime.now().strftime("%d %b, %I:%M %p %Z")
 
-    #send an email
-    email_message = f"""
-    Hi {user.username},
+        #send an email
+        email_message = f"""
+        Hi {user.username},
 
-    We noticed a login to your account {user.email}
+        We noticed a login to your account {user.email}
 
-    Time: {login_time}
+        Time: {login_time}
 
-    If this was you
+        If this was you
 
-    You can ignore this message. There's no need to take any action.
+        You can ignore this message. There's no need to take any action.
 
-    Best,
+        Best,
 
-    Team Merchandise Inventory
-    """
-    utils.send_email_notification(user.email, "Login Alert for your Merchandise Inventory account", email_message)
+        Team Merchandise Inventory
+        """
+        utils.send_email_notification(user.email, "Login Alert for your Merchandise Inventory account", email_message)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -280,13 +289,13 @@ def get_suppliers(db: Session = Depends(get_db)):
     suppliers = db.query(Supplier).all()
     return [{"id": s.id, "name": s.name} for s in suppliers]
 
-@app.post("/suppliers/add", response_model=list[dict])
+@app.post("/suppliers/add", response_model=dict)
 def add_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
     new_supplier = Supplier(**supplier.model_dump())
     db.add(new_supplier)
     db.commit()
     db.refresh(new_supplier)
-    return {"message": "Supplier added successfully", "supplier": new_supplier}
+    return {"message": "Supplier added successfully"}
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db)):
@@ -416,8 +425,8 @@ def get_photo_categories(db: Session = Depends(get_db)):
 def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['login_activity']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

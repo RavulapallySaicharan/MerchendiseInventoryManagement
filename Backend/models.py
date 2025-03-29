@@ -45,7 +45,7 @@ class Product(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, onupdate=func.now())
 
-     # Relationship: Each product belongs to a supplier
+    # Relationship: Each product belongs to a supplier
     supplier = relationship("Supplier", back_populates="products")
 
     # Relationship: A product can have multiple batches
@@ -113,6 +113,8 @@ class LoginActivity(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     timestamp = Column(TIMESTAMP, server_default=func.now())
+    ip_address = Column(String)
+    user_agent = Column(String)
 
     user = relationship("User", back_populates="login_activity")
 

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 interface InventoryItemType {
   id: number
   name: string
+  category: string
   stock_level: number
   reorder_threshold: number
   batchInfo: string
@@ -109,10 +110,6 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
   // const InventoryList: React.FC<InventoryListProps> = ({ inventory }) => {
   return (
     <div className="bg-white shadow-md rounded-lg p-4">
-      {/* <div className="flex items-center mb-4">
-        <List className="w-6 h-6 text-blue-500 mr-2" />
-        <h2 className="text-xl font-semibold">Inventory List</h2>
-      </div> */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <List className="w-6 h-6 text-blue-500 mr-2" />

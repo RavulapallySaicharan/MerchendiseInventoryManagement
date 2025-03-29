@@ -22,6 +22,14 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
   const [quantity, setQuantity] = useState(0)
   const [supplier, setSupplier] = useState("")
   const [suppliers, setSuppliers] = useState([])
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    name: "",
+    contact_person: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -48,6 +56,49 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
     fetchSuppliers()
   }, [])
 
+  const validateEmail = (email) => {
+    return /\S+@\S+\.\S+/.test(email);
+  };
+
+  const handleAddSupplier = async () => {
+    if (!newSupplier.name || !newSupplier.contact_person || !newSupplier.phone || !newSupplier.email || !newSupplier.address) {
+      alert("Please fill all fields");
+      return;
+    }
+    
+    if (!validateEmail(newSupplier.email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/suppliers/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newSupplier),
+      });
+
+      if (!response.ok) throw new Error("Failed to add supplier");
+
+      // Refresh suppliers list
+      const updatedSuppliers = await fetch("http://localhost:8000/suppliers").then(res => res.json());
+      setSuppliers(updatedSuppliers);
+
+      // Reset form and hide it
+      setNewSupplier({ name: "", contact_person: "", phone: "", email: "", address: "" });
+      setShowAddSupplier(false);
+
+      // Show success message
+      alert("Supplier added successfully");
+    } catch (error) {
+      console.error("Error adding supplier:", error);
+      alert("Failed to add supplier");
+    }
+  };
+
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -56,7 +107,7 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
       return
     }
 
-    const supplierObj = suppliers.find((s) => s.name === supplier); 
+    const supplierObj = suppliers.find((s) => s.name === supplier);
     if (!supplierObj) {
       alert("Invalid supplier selection.");
       return;
@@ -69,9 +120,9 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: selectedProduct, 
-          stock_level: quantity,  
-          supplier_id: supplierObj.id, 
+          name: selectedProduct,
+          stock_level: quantity,
+          supplier_id: supplierObj.id,
         }),
       })
 
@@ -133,7 +184,7 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
           />
         </div>
 
-        <div className="mb-2">
+        {/* <div className="mb-2">
           <label className="block text-gray-700">Supplier</label>
           <select
             className="w-full p-2 border rounded"
@@ -148,7 +199,89 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
               <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
             ))}
           </select>
+        </div> */}
+
+        <div className="mb-2">
+          <label className="block text-gray-700">Supplier</label>
+          <div className="flex space-x-2">
+            <select
+              className="w-full p-2 border rounded"
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
+              required
+            >
+              <option value="" disabled>Select a supplier</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="bg-green-500 text-white px-3 py-2 rounded"
+              onClick={() => setShowAddSupplier(true)}
+            >
+              + Add
+            </button>
+          </div>
         </div>
+
+        {/* Add Supplier Form (Shown Conditionally) */}
+        {showAddSupplier && (
+          <div className="bg-gray-100 p-3 rounded-md mt-2">
+            <h3 className="text-sm font-semibold mb-2">Add New Supplier</h3>
+            <input
+              type="text"
+              placeholder="Supplier Name"
+              className="w-full p-2 border rounded mb-2"
+              value={newSupplier.name}
+              onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Contact Person"
+              className="w-full p-2 border rounded mb-2"
+              value={newSupplier.contact_person}
+              onChange={(e) => setNewSupplier({ ...newSupplier, contact_person: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Phone"
+              className="w-full p-2 border rounded mb-2"
+              value={newSupplier.phone}
+              onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full p-2 border rounded mb-2"
+              value={newSupplier.email}
+              onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Address"
+              className="w-full p-2 border rounded mb-2"
+              value={newSupplier.address}
+              onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
+            />
+
+            <div className="flex justify-between">
+              <button
+                className="bg-blue-500 text-white px-3 py-1 rounded"
+                onClick={handleAddSupplier}
+              >
+                Save
+              </button>
+              <button
+                className="bg-red-500 text-white px-3 py-1 rounded"
+                onClick={() => setShowAddSupplier(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
 
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2" disabled={!selectedProduct}>
           Add Product

@@ -132,16 +132,13 @@ const HomePage: React.FC = () => {
         <div className="container mx-auto p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <Link to="/inventory" className="block">
-                <h2 className="text-lg font-semibold">Inventory</h2>
-              </Link>
-              <InventoryList inventory={inventory} />
+              <InventoryList inventory={inventory} refreshInventory={fetchProducts} />
             </div>
 
             <Link to="/alerts" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
               <StockAlerts inventory={inventory} />
             </Link>
-            <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+            <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow overflow-visible">
               <SupplierIntegration inventory={inventory} fetchInventory={fetchProducts} />
             </div>
             <Link to="/batches" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
