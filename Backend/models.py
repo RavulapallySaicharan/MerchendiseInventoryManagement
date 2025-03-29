@@ -150,6 +150,7 @@ class OrderItem(Base):
     product_id = Column(Integer, ForeignKey('products.id'))
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)  # Store price at time of order
+    created_at = Column(TIMESTAMP, server_default=func.now())
 
     order = relationship("Order", back_populates="order_items")
     product = relationship("Product", back_populates="order_items")

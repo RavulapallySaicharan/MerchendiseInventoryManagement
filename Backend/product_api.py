@@ -53,6 +53,15 @@ def add_product(product: ProductCreate, db: Session = Depends(get_db)):
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
+
+    stock_movement = StockMovement(
+        product_id=new_product.id,
+        movement_type="initial_stock",
+        quantity=product.stock_level
+    )
+    db.add(stock_movement)
+    db.commit()
+    db.refresh(new_product)
     return {"message": "Product added successfully", "product": new_product}
 
     

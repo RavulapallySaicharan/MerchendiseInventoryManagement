@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Package, LogOut } from "lucide-react"
+import { Package, LogOut, Calendar } from "lucide-react"
 import { useNavigate, Link } from "react-router-dom"
 import { useUser } from "../hooks/useUser"
 import CustomerPage from "./CustomerPage"
@@ -13,11 +13,47 @@ import BatchTracking from "./BatchTracking"
 import SupplierIntegration from "./SupplierIntegration"
 import Analytics from "./Analytics"
 
+interface Photo {
+  id: number;
+  url: string;
+  category: string;
+  approved: number;
+}
+
 const HomePage: React.FC = () => {
   const { user } = useUser()
   const [inventory, setInventory] = useState([])
-  const [photosToApprove, setPhotosToApprove] = useState([])
+  const [photosToApprove, setPhotosToApprove] = useState<Photo[]>([])
+  const [showDateRangeModal, setShowDateRangeModal] = useState(false)
+  const [dateRange, setDateRange] = useState({
+    startDate: "",
+    endDate: ""
+  })
   const navigate = useNavigate()
+
+  // Format date for display in input fields
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      return "";
+    }
+  };
+
+  // Format date for API request
+  const formatDateForApi = (dateString: string) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      return "";
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -31,8 +67,8 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     fetchProducts()
-    const interval = setInterval(fetchProducts, 5000) // Fetch every 5 seconds
-    return () => clearInterval(interval) // Cleanup on unmount
+    const interval = setInterval(fetchProducts, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -40,7 +76,7 @@ const HomePage: React.FC = () => {
       try {
         const response = await fetch('http://localhost:8000/photos/all')
         const data = await response.json()
-        setPhotosToApprove(data.filter(photo => photo.approved === 0)) // Only get unapproved photos
+        setPhotosToApprove(data.filter((photo: Photo) => photo.approved === 0))
       } catch (error) {
         console.error('Error fetching photos for approval:', error)
       }
@@ -54,7 +90,6 @@ const HomePage: React.FC = () => {
   }
 
   const handleApprovePhoto = async (photoId: number) => {
-    console.log("PHOTO ID", photoId)
     try {
       const response = await fetch(`http://localhost:8000/photos/${photoId}/approve`, {
         method: 'PUT',
@@ -62,12 +97,9 @@ const HomePage: React.FC = () => {
           'Authorization': `Bearer ${localStorage.getItem("token")}`,
           'Content-Type': 'application/json'
         }
-        // ,
-        // body: JSON.stringify({ category })
       });
       if (response.ok) {
         alert('Photo approved successfully!');
-        // Refresh the list of photos to approve
         const updatedPhotos = photosToApprove.filter(photo => photo.id !== photoId);
         setPhotosToApprove(updatedPhotos);
       } else {
@@ -88,7 +120,6 @@ const HomePage: React.FC = () => {
       });
       if (response.ok) {
         alert('Photo rejected successfully!');
-        // Refresh the list of photos to approve
         const updatedPhotos = photosToApprove.filter(photo => photo.id !== photoId);
         setPhotosToApprove(updatedPhotos);
       } else {
@@ -99,6 +130,39 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'startDate' | 'endDate') => {
+    const value = e.target.value;
+    console.log(`Setting ${field} to:`, value); // Debug log
+    setDateRange(prev => {
+      const newState = {
+        ...prev,
+        [field]: value
+      };
+      console.log('New date range state:', newState); // Debug log
+      return newState;
+    });
+  };
+
+  const handleExport = (type: 'csv' | 'pdf') => {
+    const baseUrl = "http://localhost:8000/reports/export"
+    const url = `${baseUrl}/${type}`
+    const queryParams = new URLSearchParams()
+    
+    console.log('Exporting with date range:', dateRange); // Debug log
+    
+    if (dateRange.startDate) {
+      queryParams.append('start_date', formatDateForApi(dateRange.startDate))
+    }
+    if (dateRange.endDate) {
+      queryParams.append('end_date', formatDateForApi(dateRange.endDate))
+    }
+
+    const finalUrl = `${url}?${queryParams.toString()}`
+    console.log('Final URL:', finalUrl); // Debug log
+    window.open(finalUrl, "_blank")
+    setShowDateRangeModal(false)
+  }
+
   if (user?.role_id === 1) {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -108,25 +172,73 @@ const HomePage: React.FC = () => {
               <Package className="w-8 h-8 mr-2" />
               <h1 className="text-2xl font-bold">Merchandise Inventory Manager</h1>
             </div>
-            <div className="export-options">
-              <h3 className="text-lg font-bold">Export Reports</h3>
-              <button
-                onClick={() => window.open("http://localhost:8000/reports/export/csv", "_blank")}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2"
-              >
-                Export as CSV
-              </button>
-              <button
-                onClick={() => window.open("http://localhost:8000/reports/export/pdf", "_blank")}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 ml-2"
-              >
-                Export as PDF
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button
+                  onClick={() => setShowDateRangeModal(true)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+                >
+                  <Calendar className="w-5 h-5" />
+                  Export Reports
+                </button>
+                {showDateRangeModal && (
+                  <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg p-4 z-10 border border-gray-700">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-white">Select Date Range</h3>
+                      <button
+                        onClick={() => {
+                          setShowDateRangeModal(false);
+                          setDateRange({ startDate: "", endDate: "" }); // Reset dates when closing
+                        }}
+                        className="text-gray-300 hover:text-white"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-200 mb-1">Start Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.startDate}
+                          onChange={(e) => handleDateChange(e, 'startDate')}
+                          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-200 mb-1">End Date</label>
+                        <input
+                          type="date"
+                          value={dateRange.endDate}
+                          onChange={(e) => handleDateChange(e, 'endDate')}
+                          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleExport('csv')}
+                          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          Export CSV
+                        </button>
+                        <button
+                          onClick={() => handleExport('pdf')}
+                          className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          Export PDF
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button onClick={handleLogout} className="flex items-center bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
+                <LogOut className="w-5 h-5 mr-2" />
+                Logout
               </button>
             </div>
-            <button onClick={handleLogout} className="flex items-center bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">
-              <LogOut className="w-5 h-5 mr-2" />
-              Logout
-            </button>
           </div>
         </nav>
         <div className="container mx-auto p-4">
