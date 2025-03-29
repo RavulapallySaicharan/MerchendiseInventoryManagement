@@ -1,24 +1,67 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, X, Star, Upload, LogOut } from 'lucide-react';
+import { ShoppingCart, X, Star, Upload, LogOut, Package, Image, MessageSquare, History, Home } from 'lucide-react';
+
+// Types
+interface Product {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    image_url: string;
+    category: string;
+    stock: number;
+}
+
+interface CartItem {
+    product: Product;
+    quantity: number;
+}
+
+interface Review {
+    id: number;
+    rating: number;
+    review_text: string;
+    review_photo?: string;
+    created_at: string;
+    user_name: string;
+}
+
+interface Order {
+    id: number;
+    customer_name: string;
+    total_price: number;
+    status: 'reserved' | 'completed' | 'cancelled';
+    items: Array<{
+        id: number;
+        product_name: string;
+        quantity: number;
+    }>;
+    created_at: string;
+}
+
+interface Photo {
+    id: number;
+    url: string;
+    category: string;
+}
 
 const CustomerPage: React.FC = () => {
-    const [products, setProducts] = useState([]);
-    const [cart, setCart] = useState<{ [key: number]: { product: any, quantity: number } }>({});
-    // const [reviews, setReviews] = useState<{ [key: number]: string }>({});
-    // const [ratings, setRatings] = useState<{ [key: number]: number }>({});
-    const [reviews, setReviews] = useState<any[]>([]);
+    // State
+    const [products, setProducts] = useState<Product[]>([]);
+    const [cart, setCart] = useState<{ [key: number]: CartItem }>({});
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [rating, setRating] = useState(1);
     const [reviewText, setReviewText] = useState("");
     const [reviewPhoto, setReviewPhoto] = useState<File | null>(null);
     const [showCart, setShowCart] = useState(false);
-    const [loginActivity, setLoginActivity] = useState([]);
     const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [category, setCategory] = useState("");
-    const [photos, setPhotos] = useState([]);
+    const [photos, setPhotos] = useState<Photo[]>([]);
     const [selectedCategory, setSelectedCategory] = useState("");
-    const [categories, setCategories] = useState([]);
-    const [reservedOrders, setReservedOrders] = useState([]);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [reservedOrders, setReservedOrders] = useState<Order[]>([]);
+    const [activeSection, setActiveSection] = useState('products');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,7 +79,6 @@ const CustomerPage: React.FC = () => {
                     }).then(res => res.json())
                 ]);
                 setProducts(productsRes);
-                setLoginActivity(loginRes);
                 setPhotos(photosRes);
                 setReviews(Array.isArray(reviewsRes) ? reviewsRes : []);
                 setReservedOrders(ordersRes);
@@ -161,7 +203,6 @@ const CustomerPage: React.FC = () => {
         });
     };
 
-
     const stripMetadata = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -178,25 +219,25 @@ const CustomerPage: React.FC = () => {
 
                         if (!ctx) {
                             return reject(new Error("Canvas is not supported"));
-                    }
-
-                    // Set canvas size to match image
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-
-                    // Draw image onto canvas (this removes metadata)
-                    ctx.drawImage(img, 0, 0);
-
-                    // Convert to a new Blob without metadata
-                    canvas.toBlob((blob) => {
-                        if (!blob) {
-                            return reject(new Error("Failed to create stripped file"));
                         }
 
-                        const strippedFile = new File([blob], file.name, { type: file.type });
-                        resolve(strippedFile);
-                    }, file.type);
-                }, []);
+                        // Set canvas size to match image
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+
+                        // Draw image onto canvas (this removes metadata)
+                        ctx.drawImage(img, 0, 0);
+
+                        // Convert to a new Blob without metadata
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                return reject(new Error("Failed to create stripped file"));
+                            }
+
+                            const strippedFile = new File([blob], file.name, { type: file.type });
+                            resolve(strippedFile);
+                        }, file.type);
+                    }, []);
                 };
 
                 img.onerror = () => reject(new Error("Failed to load image"));
@@ -295,233 +336,371 @@ const CustomerPage: React.FC = () => {
         }
     };
 
+    const renderContent = () => {
+        switch (activeSection) {
+            case 'products':
+                return (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h1 className="text-2xl font-bold text-gray-800">Our Products</h1>
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setShowCart(true)} className="relative">
+                                    <ShoppingCart className="w-6 h-6 text-gray-600" />
+                                    {Object.keys(cart).length > 0 && (
+                                        <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                            {Object.keys(cart).length}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {products.map(product => (
+                                <div key={product.id} className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow">
+                                    <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                    <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
+                                    <p className="text-gray-600 mt-2">{product.description}</p>
+                                    <div className="flex justify-between items-center mt-4">
+                                        <p className="font-bold text-lg text-blue-700">${product.price}</p>
+                                        <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleAddToCart(product)} 
+                                        className="bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md w-full hover:bg-green-600 transition-colors"
+                                    >
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 'photos':
+                return (
+                    <div className="space-y-6">
+                        <h1 className="text-2xl font-bold text-gray-800">Photo Gallery</h1>
+                        <div className="bg-white shadow-md rounded-lg p-6">
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">Upload a Photo</h2>
+                            <form onSubmit={handlePhotoUpload} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Photo</label>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => setPhotoFile(e.target.files![0])} 
+                                        required 
+                                        className="w-full border rounded-lg p-2"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Enter category" 
+                                        value={category} 
+                                        onChange={(e) => setCategory(e.target.value)} 
+                                        required 
+                                        className="w-full border rounded-lg p-2"
+                                    />
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+                                >
+                                    <Upload className="w-5 h-5" /> Upload Photo
+                                </button>
+                            </form>
+                        </div>
+                        <div className="bg-white shadow-md rounded-lg p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Gallery</h2>
+                                <select 
+                                    value={selectedCategory} 
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="border rounded-lg px-3 py-1"
+                                >
+                                    <option value="">All Categories</option>
+                                    {categories.map((category, index) => (
+                                        <option key={index} value={category}>{category}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredPhotos.map(photo => (
+                                    <div key={photo.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                                        <img src={photo.url} alt="Uploaded" className="w-full h-48 object-cover" />
+                                        <div className="p-3">
+                                            <p className="text-sm text-gray-600">Category: {photo.category}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'reviews':
+                return (
+                    <div className="space-y-6">
+                        <h1 className="text-2xl font-bold text-gray-800">Customer Reviews</h1>
+                        <div className="bg-white shadow-md rounded-lg p-6">
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">Submit a Review</h2>
+                            <form onSubmit={handleReviewSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                                    <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setRating(star)}
+                                                className="focus:outline-none"
+                                            >
+                                                <Star className={`w-6 h-6 ${star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Review Text</label>
+                                    <textarea
+                                        value={reviewText}
+                                        onChange={(e) => setReviewText(e.target.value)}
+                                        className="w-full border rounded-lg p-2"
+                                        placeholder="Write your review here..."
+                                        rows={4}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => setReviewPhoto(e.target.files![0])} 
+                                        className="w-full border rounded-lg p-2"
+                                    />
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
+                                >
+                                    <Upload className="w-5 h-5" /> Submit Review
+                                </button>
+                            </form>
+                        </div>
+                        <div className="bg-white shadow-md rounded-lg p-6">
+                            <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Reviews</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {reviews.map(review => (
+                                    <div key={review.id} className="border rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    className={`w-5 h-5 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <p className="text-gray-600">{review.review_text}</p>
+                                        {review.review_photo && (
+                                            <img
+                                                src={review.review_photo}
+                                                alt="Review"
+                                                className="w-full h-48 object-cover rounded-lg mt-4"
+                                            />
+                                        )}
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            By {review.user_name} on {new Date(review.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'orders':
+                return (
+                    <div className="space-y-6">
+                        <h1 className="text-2xl font-bold text-gray-800">Order History</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {reservedOrders.length === 0 ? (
+                                <p className="text-gray-600 text-center col-span-full">No orders found.</p>
+                            ) : (
+                                reservedOrders.map(order => (
+                                    <div key={order.id} className="bg-white shadow-md rounded-lg p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-xl font-semibold">Order #{order.id}</h2>
+                                            <span className={`px-2 py-1 rounded text-sm ${
+                                                order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                                'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                            </span>
+                                        </div>
+                                        <p className="text-gray-700">Total: ${order.total_price}</p>
+                                        <p className="text-gray-700">Date: {new Date(order.created_at).toLocaleDateString()}</p>
+                                        <ul className="mt-4 space-y-2">
+                                            {order.items.map(item => (
+                                                <li key={item.id} className="text-gray-600 flex items-center gap-2">
+                                                    <Package className="w-4 h-4" />
+                                                    {item.product_name} - {item.quantity} pcs
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="mt-4 flex gap-2">
+                                            {order.status === "reserved" && (
+                                                <button
+                                                    onClick={() => handleCancelOrder(order.id)}
+                                                    className="bg-red-500 text-white px-4 py-2 rounded-lg w-full hover:bg-red-600 transition-colors"
+                                                >
+                                                    Cancel Order
+                                                </button>
+                                            )}
+                                            {order.status === "completed" && (
+                                                <button
+                                                    onClick={() => handleReorder(order.id)}
+                                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg w-full hover:bg-blue-600 transition-colors"
+                                                >
+                                                    Reorder
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className="container mx-auto p-6 bg-gray-100 min-h-screen">
-            <nav className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 flex justify-between items-center shadow-lg rounded-lg">
-                <h1 className="text-3xl font-bold">Customer Portal</h1>
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setShowCart(true)} className="relative">
-                        <ShoppingCart className="w-8 h-8 text-white" />
-                        {Object.keys(cart).length > 0 && (
-                            <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">{Object.keys(cart).length}</span>
-                        )}
-                    </button>
+        <div className="min-h-screen bg-gray-100">
+            {/* Top Navigation */}
+            <nav className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 shadow-lg">
+                <div className="container mx-auto flex justify-between items-center">
+                    <h1 className="text-2xl font-bold">Customer Portal</h1>
                     <button onClick={handleLogout} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg shadow-md">
-                        <LogOut /> Logout
+                        <LogOut className="w-5 h-5" /> Logout
                     </button>
                 </div>
             </nav>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <div className="md:col-span-2">
-                    <h1 className="text-3xl font-bold text-center text-gray-800">Our Products</h1>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                        {products.map(product => (
-                            <div key={product.id} className="bg-white shadow-md rounded-lg p-6 hover:scale-105 transition-transform">
-                                <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
-                                <h2 className="text-2xl font-semibold text-gray-800">{product.name}</h2>
-                                <p className="text-gray-600 mt-2">{product.description}</p>
-                                <p className="font-bold text-lg text-blue-700 mt-2">Price: ${product.price}</p>
-                                {/* <div className="mt-4">
-                                    <h3 className="text-lg font-bold">Leave a Review</h3>
-                                    <select
-                                        value={ratings[product.id] || 1}
-                                        onChange={(e) => setRatings(prev => ({ ...prev, [product.id]: Number(e.target.value) }))}
-                                        className="border p-2 rounded w-full"
-                                    >
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <option key={star} value={star}>{star} Star{star > 1 && 's'}</option>
-                                        ))}
-                                    </select>
-                                    <textarea
-                                        value={reviews[product.id] || ""}
-                                        onChange={(e) => setReviews(prev => ({ ...prev, [product.id]: e.target.value }))}
-                                        className="border p-2 rounded w-full mt-2"
-                                        placeholder="Write your review here..."
-                                    />
-                                    <button
-                                        onClick={() => handleReviewSubmit(product.id)}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-2 w-full"
-                                    >
-                                        Submit Review
-                                    </button>
-                                </div> */}
-                                <button onClick={() => handleAddToCart(product)} className="bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md w-full">Add to Cart</button>
-                            </div>
-                        ))}
-                    </div>
-                    {showCart && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                            <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
-                                <button
-                                    onClick={() => setShowCart(false)}
-                                    className="absolute top-2 right-2 text-gray-600 hover:text-black"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                                <h2 className="text-xl font-bold">Your Cart</h2>
-                                {Object.keys(cart).length > 0 ? (
-                                    <ul>
-                                        {Object.entries(cart).map(([productId, { product, quantity }]) => (
-                                            <li key={product.id} className="border-b py-2 flex justify-between items-center">
-                                                <div>
-                                                    {product.name} - ${product.price} x
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={quantity}
-                                                        onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
-                                                        className="border mx-2 w-12 text-center"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={() => handleRemoveFromCart(product.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <X size={18} />
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p>Your cart is empty.</p>
-                                )}
-                                <button
-                                    onClick={handleCheckout}
-                                    className={`bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full ${Object.keys(cart).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={Object.keys(cart).length === 0}
-                                >
-                                    Reserve
-                                </button>
-                            </div>
+            {/* Main Content */}
+            <div className="container mx-auto p-6">
+                <div className="flex gap-6">
+                    {/* Sidebar */}
+                    <div className="w-64 flex-shrink-0">
+                        <div className="bg-white rounded-lg shadow-md p-4 space-y-2">
+                            <button
+                                onClick={() => setActiveSection('products')}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                                    activeSection === 'products' 
+                                        ? 'bg-blue-500 text-white' 
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <Home className="w-5 h-5" />
+                                Products
+                            </button>
+                            <button
+                                onClick={() => setActiveSection('photos')}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                                    activeSection === 'photos' 
+                                        ? 'bg-blue-500 text-white' 
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <Image className="w-5 h-5" />
+                                Photos
+                            </button>
+                            <button
+                                onClick={() => setActiveSection('reviews')}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                                    activeSection === 'reviews' 
+                                        ? 'bg-blue-500 text-white' 
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <MessageSquare className="w-5 h-5" />
+                                Reviews
+                            </button>
+                            <button
+                                onClick={() => setActiveSection('orders')}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
+                                    activeSection === 'orders' 
+                                        ? 'bg-blue-500 text-white' 
+                                        : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                            >
+                                <History className="w-5 h-5" />
+                                Orders
+                            </button>
                         </div>
-                    )}
-
-                </div>
-
-                {/* <div>
-                    <h2 className="text-xl font-bold bg-white p-4 rounded-lg shadow-md">Recent Login Activity</h2>
-                    <ul className="bg-white p-4 mt-4 rounded-lg shadow-md">
-                        {loginActivity.map(activity => (
-                            <li key={activity.id} className="border-b py-2">{activity.timestamp} - {activity.username}</li>
-                        ))}
-                    </ul>
-                </div> */}
-            </div>
-
-            <div className="mt-10">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Upload a Photo</h1>
-                <form onSubmit={handlePhotoUpload} className="flex flex-col items-center gap-4 mt-4">
-                    <input type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files![0])} required className="border p-2 rounded" />
-                    <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} required className="border p-2 rounded" />
-                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                        <Upload /> Upload Photo
-                    </button>
-                </form>
-            </div>
-
-            <h2 className="text-3xl font-bold mt-6 text-center text-gray-800">Photo Gallery</h2>
-            <select onChange={(e) => setSelectedCategory(e.target.value)} className="mt-4">
-                <option value="">All Categories</option>
-                {categories.map((category, index) => (
-                    <option key={index} value={category}>{category}</option>
-                ))}
-            </select>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                {filteredPhotos.map(photo => (
-                    <div key={photo.id} className="bg-white shadow-md rounded-lg p-4">
-                        <img src={photo.url} alt="Uploaded" className="w-full h-48 object-cover rounded-lg mb-2" />
-                        <p className="text-gray-600">Category: {photo.category}</p>
                     </div>
-                ))}
+
+                    {/* Main Content Area */}
+                    <div className="flex-1">
+                        {renderContent()}
+                    </div>
+                </div>
             </div>
 
-            <div className="mt-10">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Customer Reviews</h1>
-
-                <div className="mt-6 bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-2xl font-semibold text-gray-800">Submit a Review</h2>
-                    <form onSubmit={handleReviewSubmit} className="flex flex-col items-center gap-4 mt-4">
-                        <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="border p-2 rounded w-full">
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <option key={star} value={star}>{star} Star{star > 1 && 's'}</option>
-                            ))}
-                        </select>
-                        <textarea
-                            value={reviewText}
-                            onChange={(e) => setReviewText(e.target.value)}
-                            className="border p-2 rounded w-full"
-                            placeholder="Write your review here..."
-                        />
-                        <input type="file" accept="image/*" onChange={(e) => setReviewPhoto(e.target.files![0])} className="border p-2 rounded" />
-                        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                            <Upload /> Submit Review
+            {/* Cart Modal */}
+            {showCart && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+                        <button
+                            onClick={() => setShowCart(false)}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-black"
+                        >
+                            <X className="w-6 h-6" />
                         </button>
-                    </form>
-                </div>
-
-                {/* Reviews */}
-                <div className="mt-6">
-                    <h2 className="text-2xl font-semibold text-gray-800">Reviews</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                        {reviews.map(review => (
-                            <div key={review.id} className="bg-white shadow-md rounded-lg p-6">
-                                <p className="text-gray-600">{review.review_text}</p>
-                                <p className="font-bold">Rating: {review.rating} ⭐</p>
-                                {review.review_photo && <img src={review.review_photo} alt="Review" className="w-full h-48 object-cover rounded-lg mt-2" />}
-
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* New Order History Section */}
-            <div className="mt-10 bg-white shadow-md rounded-lg p-6">
-                <h1 className="text-3xl font-bold text-center text-gray-800">Order History</h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                    {reservedOrders.length === 0 ? (
-                        <p className="text-gray-600 text-center col-span-full">No pending approvals.</p>
-                    ) : (
-                        reservedOrders.map(order => (
-                            <div key={order.id} className="bg-white shadow-md rounded-lg p-4">
-                                <h2 className="text-xl font-semibold">Order ID: {order.id}</h2>
-                                <p className="text-gray-700">Customer: {order.customer_name}</p>
-                                <p className="text-gray-700">Total Price: ${order.total_price}</p>
-                                <p className="text-gray-700">Status: {order.status}</p>
-
-                                <ul className="mt-2">
-                                    {order.items.map(item => (
-                                        <li key={item.id} className="text-gray-600">
-                                            {item.product_name} - {item.quantity} pcs
+                        <h2 className="text-xl font-bold mb-4">Your Cart</h2>
+                        {Object.keys(cart).length > 0 ? (
+                            <>
+                                <ul className="space-y-2">
+                                    {Object.entries(cart).map(([productId, { product, quantity }]) => (
+                                        <li key={product.id} className="border-b py-2 flex justify-between items-center">
+                                            <div>
+                                                {product.name} - ${product.price} x
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={quantity}
+                                                    onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
+                                                    className="border mx-2 w-12 text-center"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveFromCart(product.id)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                <X size={18} />
+                                            </button>
                                         </li>
                                     ))}
                                 </ul>
-                                {/* Show Cancel button for Reserved orders */}
-                                {order.status === "reserved" && (
-                                    <button
-                                        onClick={() => handleCancelOrder(order.id)}
-                                        className="bg-red-500 text-white px-4 py-2 rounded-lg mt-4 w-full"
-                                    >
-                                        Cancel Order
-                                    </button>
-                                )}
-
-                                {/* Show Reorder button for Completed orders */}
-                                {order.status === "completed" && (
-                                    <button
-                                        onClick={() => handleReorder(order.id)}
-                                        className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full"
-                                    >
-                                        Reorder
-                                    </button>
-                                )}
-                            </div>
-                        ))
-                    )}
+                                <div className="mt-4 pt-4 border-t">
+                                    <p className="text-lg font-bold">
+                                        Total: ${Object.values(cart).reduce((sum, { product, quantity }) => sum + product.price * quantity, 0)}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleCheckout}
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg mt-4 w-full hover:bg-blue-600 transition-colors"
+                                >
+                                    Checkout
+                                </button>
+                            </>
+                        ) : (
+                            <p className="text-gray-500">Your cart is empty.</p>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
