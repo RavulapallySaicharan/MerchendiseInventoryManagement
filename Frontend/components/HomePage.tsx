@@ -20,6 +20,19 @@ interface Photo {
   approved: number;
 }
 
+interface ReportType {
+  id: string;
+  name: string;
+  endpoint: string;
+}
+
+const reportTypes: ReportType[] = [
+  { id: 'stock-turnover', name: 'Stock Turnover', endpoint: 'reports/stock-turnover' },
+  { id: 'profit-analysis', name: 'Profit Analysis', endpoint: 'reports/profit-analysis' },
+  { id: 'batch-aging', name: 'Batch Aging Report', endpoint: 'reports/batch-aging' },
+  { id: 'top-selling-products', name: 'Top Selling Products', endpoint: 'reports/top-selling-products' }
+];
+
 const HomePage: React.FC = () => {
   const { user } = useUser()
   const [inventory, setInventory] = useState([])
@@ -29,6 +42,7 @@ const HomePage: React.FC = () => {
     startDate: "",
     endDate: ""
   })
+  const [selectedReport, setSelectedReport] = useState<string>('');
   const navigate = useNavigate()
 
   // Format date for display in input fields
@@ -144,24 +158,36 @@ const HomePage: React.FC = () => {
   };
 
   const handleExport = (type: 'csv' | 'pdf') => {
-    const baseUrl = "http://localhost:8000/reports/export"
-    const url = `${baseUrl}/${type}`
-    const queryParams = new URLSearchParams()
-    
-    console.log('Exporting with date range:', dateRange); // Debug log
-    
-    if (dateRange.startDate) {
-      queryParams.append('start_date', formatDateForApi(dateRange.startDate))
-    }
-    if (dateRange.endDate) {
-      queryParams.append('end_date', formatDateForApi(dateRange.endDate))
+    if (!selectedReport) {
+      alert('Please select a report type');
+      return;
     }
 
-    const finalUrl = `${url}?${queryParams.toString()}`
-    console.log('Final URL:', finalUrl); // Debug log
-    window.open(finalUrl, "_blank")
-    setShowDateRangeModal(false)
-  }
+    const reportType = reportTypes.find(r => r.id === selectedReport);
+    if (!reportType) {
+      alert('Invalid report type');
+      return;
+    }
+
+    const baseUrl = "http://localhost:8000";
+    const url = `${baseUrl}/${reportType.endpoint}/export/${type}`;
+    const queryParams = new URLSearchParams();
+    
+    console.log('Exporting with date range:', dateRange);
+    
+    if (dateRange.startDate) {
+      queryParams.append('start_date', formatDateForApi(dateRange.startDate));
+    }
+    if (dateRange.endDate) {
+      queryParams.append('end_date', formatDateForApi(dateRange.endDate));
+    }
+
+    const finalUrl = `${url}?${queryParams.toString()}`;
+    console.log('Final URL:', finalUrl);
+    window.open(finalUrl, "_blank");
+    setShowDateRangeModal(false);
+    setSelectedReport(''); // Reset selection
+  };
 
   if (user?.role_id === 1) {
     return (
@@ -182,13 +208,14 @@ const HomePage: React.FC = () => {
                   Export Reports
                 </button>
                 {showDateRangeModal && (
-                  <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg p-4 z-10 border border-gray-700">
+                  <div className="absolute right-0 mt-2 w-96 bg-gray-800 rounded-lg shadow-lg p-4 z-10 border border-gray-700">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-semibold text-white">Select Date Range</h3>
+                      <h3 className="text-lg font-semibold text-white">Export Report</h3>
                       <button
                         onClick={() => {
                           setShowDateRangeModal(false);
-                          setDateRange({ startDate: "", endDate: "" }); // Reset dates when closing
+                          setDateRange({ startDate: "", endDate: "" });
+                          setSelectedReport(''); // Reset selection
                         }}
                         className="text-gray-300 hover:text-white"
                       >
@@ -198,6 +225,21 @@ const HomePage: React.FC = () => {
                       </button>
                     </div>
                     <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-200 mb-1">Report Type</label>
+                        <select
+                          value={selectedReport}
+                          onChange={(e) => setSelectedReport(e.target.value)}
+                          className="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Select a report type</option>
+                          {reportTypes.map((report) => (
+                            <option key={report.id} value={report.id}>
+                              {report.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-200 mb-1">Start Date</label>
                         <input
