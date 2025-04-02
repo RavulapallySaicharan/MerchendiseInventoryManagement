@@ -40,21 +40,21 @@ def reorder(order_id: int, db: Session = Depends(get_db), current_user = Depends
 
 **Additional protections**:
 ```python
-@app.get("/orders/me")
-def get_my_orders(current_user = Depends(get_current_user)):
-    return fetch_orders_for_user(current_user.username)
+@router.get("/orders/customer")
+def get_customer_orders(
+    db: Session = Depends(get_db), 
+    current_user=Depends(get_current_user)
+):
 ```
 
 ✅ Ensures that all protected endpoints enforce authentication.
 
 ```python
-def require_admin(user = Depends(get_current_user)):
-    if user.role_id != 1:
-        raise HTTPException(status_code=403, detail="Admins only")
-    return user
-
-@app.get("/photos/all")
-def get_all_photos(current_user = Depends(require_admin)):
+@router.post("/approve-purchase/{order_id}")
+def approve_purchase(order_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Check if the user is an admin
+    if current_user.role_id != 1:
+        raise HTTPException(status_code=403, detail="Not authorized")
     ...
 ```
 
@@ -73,15 +73,6 @@ def get_all_photos(current_user = Depends(require_admin)):
 ```python
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ```
-
-- Tokens use a securely loaded secret key:
-```python
-from dotenv import load_dotenv
-load_dotenv()
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-```
-
-✅ No plain-text passwords, and secrets are kept in `.env`.
 
 ---
 
@@ -141,18 +132,6 @@ app = FastAPI(debug=False)
 
 ✅ Prevents accidental exposure of stack traces.
 
-- Custom global error handler:
-```python
-@app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error."}
-    )
-```
-
-✅ Hides internal exceptions from users while optionally logging them internally.
-
 ---
 
 ## 6. Vulnerable and Outdated Components
@@ -172,24 +151,76 @@ snyk monitor
 
 ## 7. Identification and Authentication Failures
 
-**What it means**: Protect login endpoints and enforce secure authentication.
+**What it means**: This refers to weaknesses in authentication mechanisms that allow attackers to:
+- Bypass login
+- Use brute-force attacks to guess credentials
+- Reuse stolen credentials
+- Abuse poorly configured token-based auth
 
-**Example attack**: Brute-forcing the `/token` endpoint.
+---
+
+**Example attack**: A bot sends thousands of POST requests to `/token` with different password guesses to brute-force a user's account.
+
+---
 
 **How we implement it**:
-- Use JWT tokens via `OAuth2PasswordBearer`
-- Rate limit login with SlowAPI:
+
+### ✅ a. Secure Authentication with OAuth2 + JWT
+
+We use FastAPI's built-in `OAuth2PasswordBearer` dependency, which allows secure token-based authentication with hashed passwords and bearer tokens.
+
 ```python
-@limiter.limit("5/minute")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+```
+
+✅ Ensures that only users with valid tokens can access protected routes.
+
+---
+
+### ✅ b. Password Hashing with bcrypt
+
+Passwords are never stored or compared in plain text — they're hashed using `bcrypt`:
+
+```python
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
+```
+
+✅ Prevents stolen database dumps from being usable due to one-way hashing.
+
+---
+
+### ✅ c. Login Rate Limiting to Prevent Brute Force
+
+We use `slowapi` to throttle login attempts:
+
+```python
+@limiter.limit("5/minute")  # ⛔ max 5 attempts/minute per IP
 @app.post("/token")
 def login(...): ...
 ```
 
-✅ Prevents abuse and ensures secure login with tokens.
+If a user exceeds this limit, they receive a `429 Too Many Requests` response.
+
+✅ This protects login endpoints from brute-force and credential stuffing attacks.
 
 ---
 
-## 2. Cryptographic Failures
+### ✅ d. Password Reuse Protection 
+
+We track `password_history` and reject reuse of recent passwords to enhance account security.
+
+---
+
+Together, these controls offer a secure and scalable authentication layer that mitigates OWASP A07 risks.
+
+---
+
+## 8. Cryptographic Failures
 
 **What it means**: Passwords, tokens, or secrets must be protected using strong cryptography.
 
@@ -200,39 +231,5 @@ def login(...): ...
 ```python
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ```
-
----
-
-## 6. Vulnerable and Outdated Components
-
-**What it means**: Using outdated libraries can introduce known vulnerabilities.
-
-**How we implement it**:
-- We use **Snyk** to scan and monitor dependencies.
-```bash
-snyk test
-snyk monitor
-```
-
-✅ Snyk alerts us to unsafe packages and suggests upgrades.
-
----
-
-## 7. Identification and Authentication Failures
-
-**What it means**: Protect login endpoints and enforce secure authentication.
-
-**Example attack**: Brute-forcing the `/token` endpoint.
-
-**How we implement it**:
-- Use JWT tokens via `OAuth2PasswordBearer`
-- Rate limit login with SlowAPI:
-```python
-@limiter.limit("5/minute")
-@app.post("/token")
-def login(...): ...
-```
-
-✅ Prevents abuse and ensures secure login with tokens.
 
 ---
