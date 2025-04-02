@@ -1,8 +1,15 @@
 from passlib.context import CryptContext
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from fastapi import UploadFile, HTTPException
+from PIL import Image
+import io
+import os
 
 import smtplib
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -46,3 +53,21 @@ def send_email_notification(to_email: str, subject: str, body: str):
 
     finally:
         server.quit()  # Close the server connection
+
+def validate_image(file: UploadFile):
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid file format. Only JPG and PNG are allowed")
+
+    file.file.seek(0, 2)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size too large. Max 5MB")
+
+    try:
+        img = Image.open(io.BytesIO(file.file.read()))
+        img.verify()
+        file.file.seek(0)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid image file")

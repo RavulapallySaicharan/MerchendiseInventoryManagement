@@ -13,6 +13,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 from reporting_api import router as reporting_router
 from user_account_service import router as user_account_router
 from order_api import router as ordering_router
@@ -23,7 +24,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlalchemy.orm import Session
-from utils import get_password_hash
+from utils import get_password_hash, validate_image
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine, get_session
@@ -36,6 +37,10 @@ from fastapi.staticfiles import StaticFiles
 
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
 # Database and Email Configuration
 DB_PATH = "app.db"
 SMTP_SERVER = "smtp.gmail.com"
@@ -47,7 +52,15 @@ EMAIL_RECEIVER = "ravulapally.saicharan261@gmail.com"
 models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
-app = FastAPI()
+# app = FastAPI()
+app = FastAPI(debug=False)
+
+# Create the limiter
+limiter = Limiter(key_func=get_remote_address)
+
+# Attach to FastAPI app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Attach the Prometheus instrumentator
 Instrumentator().instrument(app).expose(app)
@@ -108,6 +121,13 @@ class SupplierCreate(BaseModel):
     address: str
     
     model_config = ConfigDict(from_attributes=True)
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please wait before retrying."}
+    )
 
 # Helper functions
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -223,6 +243,7 @@ async def start_background_task():
     asyncio.create_task(check_low_stock())
 
 @app.post("/token", response_model=Token)
+@limiter.limit("5/minute")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
 
@@ -353,18 +374,23 @@ def get_login_activity(current_user: User = Depends(get_current_user), db: Sessi
 
 @app.post("/photos/upload")
 def upload_photo(uploaded_file: UploadFile = File(...), category: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    validate_image(uploaded_file)
     # Ensure the photos directory exists
     os.makedirs('photos', exist_ok=True)
+
+    # Secure the filename
+    ext = os.path.splitext(uploaded_file.filename)[1].lower()
+    safe_filename = f"{uuid.uuid4().hex}{ext}"
 
     # Save the file to the server or cloud storage
     # file_location = f"photos/{uploaded_file.filename}"
     # Save the file to the server
-    file_location = f"photos/{uploaded_file.filename}"
+    file_location = f"photos/{safe_filename}"
     with open(file_location, "wb") as file:
         file.write(uploaded_file.file.read())
 
     # Store the full URL in the database
-    file_url = f"http://localhost:8000/static/{uploaded_file.filename}"
+    file_url = f"http://localhost:8000/static/{safe_filename}"
 
     # cd = pyclamd.ClamdUnixSocket()
     # Scan the file

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, X, Star, Upload, LogOut, Package, Image, MessageSquare, History, Home } from 'lucide-react';
+import { ShoppingCart, X, Star, Upload, LogOut, Package, Image as IconImage, MessageSquare, History, Home } from 'lucide-react';
 
 // Types
 interface Product {
@@ -213,31 +213,29 @@ const CustomerPage: React.FC = () => {
                 img.src = event.target?.result as string;
 
                 img.onload = () => {
-                    useEffect(() => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
 
-                        if (!ctx) {
-                            return reject(new Error("Canvas is not supported"));
+                    if (!ctx) {
+                        return reject(new Error("Canvas is not supported"));
+                    }
+
+                    // Set canvas size to match image
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // Draw image onto canvas (this removes metadata)
+                    ctx.drawImage(img, 0, 0);
+
+                    // Convert to a new Blob without metadata
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            return reject(new Error("Failed to create stripped file"));
                         }
 
-                        // Set canvas size to match image
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-
-                        // Draw image onto canvas (this removes metadata)
-                        ctx.drawImage(img, 0, 0);
-
-                        // Convert to a new Blob without metadata
-                        canvas.toBlob((blob) => {
-                            if (!blob) {
-                                return reject(new Error("Failed to create stripped file"));
-                            }
-
-                            const strippedFile = new File([blob], file.name, { type: file.type });
-                            resolve(strippedFile);
-                        }, file.type);
-                    }, []);
+                        const strippedFile = new File([blob], file.name, { type: file.type });
+                        resolve(strippedFile);
+                    }, file.type);
                 };
 
                 img.onerror = () => reject(new Error("Failed to load image"));
@@ -613,7 +611,7 @@ const CustomerPage: React.FC = () => {
                                         : 'text-gray-600 hover:bg-gray-100'
                                 }`}
                             >
-                                <Image className="w-5 h-5" />
+                                <IconImage className="w-5 h-5" />
                                 Photos
                             </button>
                             <button

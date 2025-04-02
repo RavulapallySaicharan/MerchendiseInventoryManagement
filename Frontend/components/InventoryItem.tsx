@@ -8,7 +8,7 @@ interface InventoryItemProps {
     stock_level: number
     reorder_threshold: number
     batchInfo: string
-    supplier: string
+    supplier_id: number
     image_url: string
   }
 }
@@ -32,7 +32,7 @@ const InventoryItem: React.FC<InventoryItemProps> = ({ item }) => {
         <h3 className="font-semibold text-sm truncate">{item.name}</h3>
         <div className="mt-1 space-y-1">
           <p className="text-xs text-gray-600">Quantity: {item.stock_level}</p>
-          <p className="text-xs text-gray-500">Supplier: {item.supplier}</p>
+          <p className="text-xs text-gray-500">Supplier: {item.supplier_id}</p>
         </div>
       </div>
       <div className="flex-shrink-0">

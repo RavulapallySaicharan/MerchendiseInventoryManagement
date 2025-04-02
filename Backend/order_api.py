@@ -196,6 +196,8 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
+    if order.customer_name != current_user.username:
+        raise HTTPException(status_code=403, detail="Access denied")
     if order.status == "completed":
         raise HTTPException(status_code=400, detail="Only pending orders can be cancelled.")
     order.status = "cancelled"
@@ -209,6 +211,8 @@ def reorder(order_id: int, db: Session = Depends(get_db), current_user=Depends(g
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
+    if order.customer_name != current_user.username:
+        raise HTTPException(status_code=403, detail="Access denied")
     if order.status != "completed":
         raise HTTPException(status_code=400, detail="Only completed orders can be reordered.")
     # new_order = order.copy()
