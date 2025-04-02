@@ -179,22 +179,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 ---
 
-### ✅ b. Password Hashing with bcrypt
-
-Passwords are never stored or compared in plain text — they're hashed using `bcrypt`:
-
-```python
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain, hashed):
-    return pwd_context.verify(plain, hashed)
-```
-
-✅ Prevents stolen database dumps from being usable due to one-way hashing.
-
----
-
-### ✅ c. Login Rate Limiting to Prevent Brute Force
+### ✅ b. Login Rate Limiting to Prevent Brute Force
 
 We use `slowapi` to throttle login attempts:
 
@@ -210,26 +195,12 @@ If a user exceeds this limit, they receive a `429 Too Many Requests` response.
 
 ---
 
-### ✅ d. Password Reuse Protection 
+### ✅ c. Password Reuse Protection 
 
 We track `password_history` and reject reuse of recent passwords to enhance account security.
 
 ---
 
 Together, these controls offer a secure and scalable authentication layer that mitigates OWASP A07 risks.
-
----
-
-## 8. Cryptographic Failures
-
-**What it means**: Passwords, tokens, or secrets must be protected using strong cryptography.
-
-**Example attack**: Storing passwords in plain text, or leaking secrets in logs.
-
-**How we implement it**:
-- Passwords are hashed using `bcrypt` via `passlib`:
-```python
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-```
 
 ---
