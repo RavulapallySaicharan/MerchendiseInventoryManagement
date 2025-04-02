@@ -77,13 +77,11 @@ def add_batches():
     ]
 
     for batch_data in batches:
-        try:
+        existing_batch = session.query(Batch).filter_by(batch_number=batch_data.batch_number).first()
+        if not existing_batch:
             session.add(batch_data)
-            session.commit()
-        except Exception as e:
-            session.rollback()  # Rollback on error
-            print(f"Error adding batch {batch_data.id}: {e}")
 
+    session.commit()
     session.close()
 
 def add_default_roles():

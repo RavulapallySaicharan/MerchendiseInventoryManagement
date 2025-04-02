@@ -1,6 +1,6 @@
 from fastapi import File, UploadFile
 import os
-from models import Product, Photo
+from models import Product, Photo, StockMovement
 from fastapi import APIRouter, Depends
 from database import get_db
 from sqlalchemy.orm import Session

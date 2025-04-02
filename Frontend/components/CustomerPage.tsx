@@ -362,7 +362,7 @@ const CustomerPage: React.FC = () => {
                                     <p className="text-gray-600 mt-2">{product.description}</p>
                                     <div className="flex justify-between items-center mt-4">
                                         <p className="font-bold text-lg text-blue-700">${product.price}</p>
-                                        <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                        <p className="text-sm text-gray-500">Stock: {product.stock_level}</p>
                                     </div>
                                     <button 
                                         onClick={() => handleAddToCart(product)} 

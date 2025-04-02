@@ -387,7 +387,7 @@ def upload_photo(uploaded_file: UploadFile = File(...), category: str = Form(...
 
 @app.get("/photos")
 def get_photos(category: str = None, db: Session = Depends(get_db)):
-    query = db.query(Photo).filter(Photo.approved == 1)  # Only show approved photos
+    query = db.query(Photo).filter(Photo.approved == 1, Photo.uploaded_by.isnot(None))  # Only show approved photos
     if category:
         query = query.filter(Photo.category == category)  # Filter by category
     return query.all()
@@ -426,7 +426,13 @@ def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['batches']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['order_items']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['suppliers']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['login_activity']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['photos']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['stock_movements']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

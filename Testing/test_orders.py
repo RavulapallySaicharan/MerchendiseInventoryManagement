@@ -140,7 +140,7 @@ def test_cancel_order(auth_headers, db_session):
 
 # Test reordering an order
 def test_reorder(auth_headers, db_session):
-    test_order = Order(id=1, customer_name="test_user", status="reserved", total_price=200)
+    test_order = Order(id=1, customer_name="test_user", status="completed", total_price=200)
     db_session.add(test_order)
     db_session.commit()
     response = client.post("/orders/1/reorder", headers=auth_headers)
