@@ -9,6 +9,7 @@ import sqlite3
 import os
 import pyclamd
 import utils
+import uuid
 from typing import Optional
 from fastapi import Depends, FastAPI, File, Form, HTTPException, status, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,6 +42,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+from wishlist_api import router as wishlist_router
+
 # Database and Email Configuration
 DB_PATH = "app.db"
 SMTP_SERVER = "smtp.gmail.com"
@@ -62,9 +65,6 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Attach the Prometheus instrumentator
-Instrumentator().instrument(app).expose(app)
-
 app.include_router(auth_router)
 app.include_router(reporting_router)
 app.include_router(user_account_router)
@@ -72,7 +72,10 @@ app.include_router(ordering_router)
 app.include_router(batch_router)
 app.include_router(review_router)
 app.include_router(product_router)
+app.include_router(wishlist_router)
 
+# Attach the Prometheus instrumentator
+Instrumentator().instrument(app).expose(app)
 
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "photos"
@@ -243,7 +246,7 @@ async def start_background_task():
     asyncio.create_task(check_low_stock())
 
 @app.post("/token", response_model=Token)
-@limiter.limit("5/minute")
+# @limiter.limit("5/minute")
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
 
@@ -453,12 +456,13 @@ def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['order_items']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['suppliers']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['login_activity']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['photos']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['stock_movements']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['wishlist']])
 
     Base.metadata.create_all(engine)  # Recreate tables
 

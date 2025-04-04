@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, X, Star, Upload, LogOut, Package, Image as IconImage, MessageSquare, History, Home } from 'lucide-react';
+import { ShoppingCart, X, Star, Upload, LogOut, Package, Image as IconImage, MessageSquare, History, Home, Heart } from 'lucide-react';
 
 // Types
 interface Product {
@@ -10,7 +10,8 @@ interface Product {
     price: number;
     image_url: string;
     category: string;
-    stock: number;
+    stock_level: number;
+    is_in_wishlist?: boolean;
 }
 
 interface CartItem {
@@ -62,12 +63,14 @@ const CustomerPage: React.FC = () => {
     const [categories, setCategories] = useState<string[]>([]);
     const [reservedOrders, setReservedOrders] = useState<Order[]>([]);
     const [activeSection, setActiveSection] = useState('products');
+    const [wishlist, setWishlist] = useState<{ [key: number]: Product }>({});
+    const [showWishlist, setShowWishlist] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [productsRes, loginRes, photosRes, reviewsRes, ordersRes] = await Promise.all([
+                const [productsRes, loginRes, photosRes, reviewsRes, ordersRes, wishlistRes] = await Promise.all([
                     fetch('http://localhost:8000/products').then(res => res.json()),
                     fetch('http://localhost:8000/login-activity', {
                         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
@@ -76,12 +79,33 @@ const CustomerPage: React.FC = () => {
                     fetch('http://localhost:8000/reviews').then(res => res.json()),
                     fetch('http://localhost:8000/orders/customer', {
                         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                    }).then(res => res.json()),
+                    fetch('http://localhost:8000/wishlist', {
+                        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
                     }).then(res => res.json())
                 ]);
                 setProducts(productsRes);
                 setPhotos(photosRes);
                 setReviews(Array.isArray(reviewsRes) ? reviewsRes : []);
                 setReservedOrders(ordersRes);
+                
+                // Initialize wishlist state
+                const wishlistMap: { [key: number]: Product } = {};
+                wishlistRes.forEach((item: any) => {
+                    const product = productsRes.find((p: Product) => p.id === item.product_id);
+                    if (product) {
+                        wishlistMap[product.id] = product;
+                    }
+                });
+                setWishlist(wishlistMap);
+                
+                // Update products with wishlist status
+                setProducts(prevProducts => 
+                    prevProducts.map(p => ({
+                        ...p,
+                        is_in_wishlist: wishlistMap[p.id] !== undefined
+                    }))
+                );
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -159,19 +183,22 @@ const CustomerPage: React.FC = () => {
             setCart({});
             setShowCart(false);
 
-            const [ordersRes] = await Promise.all([
-                fetch('http://localhost:8000/orders/customer', {
+            // Refresh orders
+            const ordersRes = await fetch('http://localhost:8000/orders/customer', {
                     headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-                }).then(res => res.json())
-            ]);
+            }).then(res => res.json());
             setReservedOrders(ordersRes);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error("Error during reservation:", error);
+            if (error instanceof Error) {
             alert(error.message || "Reservation failed");
+            } else {
+                alert("Reservation failed");
+            }
         }
     };
 
-    const handleAddToCart = (product) => {
+    const handleAddToCart = (product: Product) => {
         setCart(prevCart => {
             const updatedCart = { ...prevCart };
             if (updatedCart[product.id]) {
@@ -203,6 +230,54 @@ const CustomerPage: React.FC = () => {
         });
     };
 
+    const handleAddToWishlist = async (product: Product) => {
+        try {
+            const response = await fetch(`http://localhost:8000/wishlist/${product.id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem("token")}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                setWishlist(prev => ({
+                    ...prev,
+                    [product.id]: product
+                }));
+                setProducts(prev => prev.map(p => 
+                    p.id === product.id ? { ...p, is_in_wishlist: true } : p
+                ));
+            }
+        } catch (error) {
+            console.error("Error adding to wishlist:", error);
+        }
+    };
+
+    const handleRemoveFromWishlist = async (productId: number) => {
+        try {
+            const response = await fetch(`http://localhost:8000/wishlist/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+
+            if (response.ok) {
+                setWishlist(prev => {
+                    const newWishlist = { ...prev };
+                    delete newWishlist[productId];
+                    return newWishlist;
+                });
+                setProducts(prev => prev.map(p => 
+                    p.id === productId ? { ...p, is_in_wishlist: false } : p
+                ));
+            }
+        } catch (error) {
+            console.error("Error removing from wishlist:", error);
+        }
+    };
+
     const stripMetadata = (file: File): Promise<File> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -213,11 +288,11 @@ const CustomerPage: React.FC = () => {
                 img.src = event.target?.result as string;
 
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
 
-                    if (!ctx) {
-                        return reject(new Error("Canvas is not supported"));
+                        if (!ctx) {
+                            return reject(new Error("Canvas is not supported"));
                     }
 
                     // Set canvas size to match image
@@ -316,7 +391,8 @@ const CustomerPage: React.FC = () => {
         try {
             const response = await fetch(`http://localhost:8000/orders/${orderId}/reorder`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json",
+                headers: { 
+                    "Content-Type": "application/json",
                     'Authorization': `Bearer ${localStorage.getItem("token")}` 
                  },
             });
@@ -324,7 +400,11 @@ const CustomerPage: React.FC = () => {
             if (response.ok) {
                 const data = await response.json();
                 alert("Order reordered successfully!");
-                fetchOrders(); // Refresh order list
+                // Refresh orders
+                const ordersRes = await fetch('http://localhost:8000/orders/customer', {
+                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                }).then(res => res.json());
+                setReservedOrders(ordersRes);
             } else {
                 const data = await response.json();
                 alert(`Error: ${data.detail}`);
@@ -337,37 +417,70 @@ const CustomerPage: React.FC = () => {
     const renderContent = () => {
         switch (activeSection) {
             case 'products':
-                return (
+    return (
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
                             <h1 className="text-2xl font-bold text-gray-800">Our Products</h1>
-                            <div className="flex items-center gap-4">
-                                <button onClick={() => setShowCart(true)} className="relative">
-                                    <ShoppingCart className="w-6 h-6 text-gray-600" />
-                                    {Object.keys(cart).length > 0 && (
+                <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setShowWishlist(true)} 
+                                    className="relative"
+                                >
+                                    <Heart className="w-6 h-6 text-red-500" />
+                                    {Object.keys(wishlist).length > 0 && (
                                         <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                            {Object.keys(cart).length}
+                                            {Object.keys(wishlist).length}
                                         </span>
                                     )}
                                 </button>
+                    <button onClick={() => setShowCart(true)} className="relative">
+                                    <ShoppingCart className="w-6 h-6 text-gray-600" />
+                        {Object.keys(cart).length > 0 && (
+                                        <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                            {Object.keys(cart).length}
+                                        </span>
+                        )}
+                    </button>
                             </div>
-                        </div>
+                </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {products.map(product => (
+                        {products.map(product => (
                                 <div key={product.id} className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow">
-                                    <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
                                     <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
-                                    <p className="text-gray-600 mt-2">{product.description}</p>
+                                <p className="text-gray-600 mt-2">{product.description}</p>
                                     <div className="flex justify-between items-center mt-4">
                                         <p className="font-bold text-lg text-blue-700">${product.price}</p>
                                         <p className="text-sm text-gray-500">Stock: {product.stock_level}</p>
                                     </div>
-                                    <button 
-                                        onClick={() => handleAddToCart(product)} 
-                                        className="bg-green-500 text-white px-4 py-2 rounded-lg mt-4 shadow-md w-full hover:bg-green-600 transition-colors"
-                                    >
-                                        Add to Cart
-                                    </button>
+                                    <div className="flex gap-2 mt-4">
+                                        <button 
+                                            onClick={() => handleAddToCart(product)} 
+                                            className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md flex-1 hover:bg-green-600 transition-colors"
+                                        >
+                                            Add to Cart
+                                        </button>
+                                        <button
+                                            onClick={() => product.is_in_wishlist ? handleRemoveFromWishlist(product.id) : handleAddToWishlist(product)}
+                                            className={`px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-colors ${
+                                                product.is_in_wishlist 
+                                                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            {product.is_in_wishlist ? (
+                                                <>
+                                                    <Heart className="w-5 h-5 fill-current" />
+                                                    In Wishlist
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Heart className="w-5 h-5" />
+                                                    Add to Wishlist
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -412,7 +525,7 @@ const CustomerPage: React.FC = () => {
                         <div className="bg-white shadow-md rounded-lg p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Gallery</h2>
-                                <select 
+                                    <select
                                     value={selectedCategory} 
                                     onChange={(e) => setSelectedCategory(e.target.value)}
                                     className="border rounded-lg px-3 py-1"
@@ -477,12 +590,12 @@ const CustomerPage: React.FC = () => {
                                         className="w-full border rounded-lg p-2"
                                     />
                                 </div>
-                                <button 
+                                    <button
                                     type="submit" 
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
-                                >
+                                    >
                                     <Upload className="w-5 h-5" /> Submit Review
-                                </button>
+                                    </button>
                             </form>
                         </div>
                         <div className="bg-white shadow-md rounded-lg p-6">
@@ -647,40 +760,40 @@ const CustomerPage: React.FC = () => {
             </div>
 
             {/* Cart Modal */}
-            {showCart && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
-                        <button
-                            onClick={() => setShowCart(false)}
-                            className="absolute top-2 right-2 text-gray-600 hover:text-black"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                    {showCart && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                            <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+                                <button
+                                    onClick={() => setShowCart(false)}
+                                    className="absolute top-2 right-2 text-gray-600 hover:text-black"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
                         <h2 className="text-xl font-bold mb-4">Your Cart</h2>
-                        {Object.keys(cart).length > 0 ? (
+                                {Object.keys(cart).length > 0 ? (
                             <>
                                 <ul className="space-y-2">
-                                    {Object.entries(cart).map(([productId, { product, quantity }]) => (
-                                        <li key={product.id} className="border-b py-2 flex justify-between items-center">
-                                            <div>
-                                                {product.name} - ${product.price} x
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={quantity}
-                                                    onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
-                                                    className="border mx-2 w-12 text-center"
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => handleRemoveFromCart(product.id)}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                <X size={18} />
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
+                                        {Object.entries(cart).map(([productId, { product, quantity }]) => (
+                                            <li key={product.id} className="border-b py-2 flex justify-between items-center">
+                                                <div>
+                                                    {product.name} - ${product.price} x
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={quantity}
+                                                        onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
+                                                        className="border mx-2 w-12 text-center"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveFromCart(product.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 <div className="mt-4 pt-4 border-t">
                                     <p className="text-lg font-bold">
                                         Total: ${Object.values(cart).reduce((sum, { product, quantity }) => sum + product.price * quantity, 0)}
@@ -696,7 +809,51 @@ const CustomerPage: React.FC = () => {
                         ) : (
                             <p className="text-gray-500">Your cart is empty.</p>
                         )}
-                    </div>
+                            </div>
+                        </div>
+                    )}
+
+            {/* Wishlist Modal */}
+            {showWishlist && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+                        <button
+                            onClick={() => setShowWishlist(false)}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-black"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                        <h2 className="text-xl font-bold mb-4">Your Wishlist</h2>
+                        {Object.keys(wishlist).length > 0 ? (
+                            <>
+                                <ul className="space-y-2">
+                                    {Object.values(wishlist).map(product => (
+                                        <li key={product.id} className="border-b py-2 flex justify-between items-center">
+                                            <div>
+                                                {product.name} - ${product.price}
+                </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleAddToCart(product)}
+                                                    className="text-green-500 hover:text-green-700"
+                                                >
+                                                    <ShoppingCart size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveFromWishlist(product.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        ) : (
+                            <p className="text-gray-500">Your wishlist is empty.</p>
+                                )}
+                            </div>
                 </div>
             )}
         </div>

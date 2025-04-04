@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
+from datetime import datetime
+from typing import Optional, List
 
 class Token(BaseModel):
     access_token: str
@@ -18,9 +20,9 @@ class User(BaseModel):
     email: EmailStr
     username: str
     is_active: bool = True
+    role_id: Optional[int] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -35,5 +37,40 @@ class ChangePassword(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
+    description: str
+    price: float
+    category: str
     stock_level: int
     supplier_id: int
+    cost_price: float
+    reorder_threshold: int
+    reserved_stock: int
+
+class WishlistItemBase(BaseModel):
+    product_id: int
+
+class WishlistItemCreate(WishlistItemBase):
+    pass
+
+class WishlistItem(BaseModel):
+    id: int
+    user_id: int
+    product_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class Product(BaseModel):
+    id: int
+    name: str
+    description: str
+    price: float
+    image_url: Optional[str] = None
+    category: str
+    stock_level: int
+    supplier_id: int
+    cost_price: float
+    reorder_threshold: int
+    reserved_stock: int
+
+    model_config = ConfigDict(from_attributes=True)

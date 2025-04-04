@@ -165,3 +165,21 @@ class StockMovement(Base):
     timestamp = Column(TIMESTAMP, server_default=func.now())
 
     product = relationship("Product", back_populates="stock_movements")
+
+class Wishlist(Base):
+    __tablename__ = "wishlist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="wishlist_items")
+    product = relationship("Product", back_populates="wishlist_items")
+
+# Add wishlist relationship to User model
+User.wishlist_items = relationship("Wishlist", back_populates="user")
+
+# Add wishlist relationship to Product model
+Product.wishlist_items = relationship("Wishlist", back_populates="product")
