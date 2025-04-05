@@ -1,10 +1,11 @@
 from fastapi import File, UploadFile
 import os
-from models import Product, Photo, StockMovement
+from models import Product, Photo, StockMovement, ProductImage
 from fastapi import APIRouter, Depends
 from database import get_db
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import List
 
 router = APIRouter()
 
@@ -18,6 +19,26 @@ class ProductCreate(BaseModel):
     price: float
     supplier_id: int
     image_url: str | None = None
+
+@router.post("/products/{product_id}/upload-images")
+async def upload_images(
+    product_id: int,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db)
+):
+    os.makedirs('photos', exist_ok=True)
+    for file in files:
+        safe_filename = file.filename.replace(" ", "_")
+        file_location = f"photos/{safe_filename}"
+        with open(file_location, "wb") as f:
+            f.write(file.file.read())
+
+        file_url = f"http://localhost:8000/static/{safe_filename}"
+        new_image = ProductImage(product_id=product_id, image_url=file_url)
+        db.add(new_image)
+
+    db.commit()
+    return {"message": "Images uploaded successfully"}
 
 @router.post("/products/upload-image")
 async def upload_image(uploaded_file: UploadFile = File(...), db: Session = Depends(get_db)):

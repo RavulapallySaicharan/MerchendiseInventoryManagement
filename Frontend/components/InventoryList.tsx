@@ -33,8 +33,12 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
     image_url: "",
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+
+
   const [suppliers, setSuppliers] = useState([]);
 
   useEffect(() => {
@@ -49,17 +53,10 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPreviewUrl(event.target.result.toString());
-        }
-      };
-      reader.readAsDataURL(file);
-    }
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(files);
+    const urls = files.map(file => URL.createObjectURL(file));
+    setPreviewUrls(urls);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,27 +64,37 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
     setFormData({ ...formData, [name]: value });
   };
 
+  const uploadImages = async (productId: number) => {
+    const formData = new FormData();
+    selectedFiles.forEach(file => formData.append("files", file));
+    await fetch(`http://localhost:8000/products/${productId}/upload-images`, {
+      method: "POST",
+      body: formData
+    });
+  };
+
   const handleSubmit = async () => {
     try {
-      let uploadedImageUrl = formData.image_url;
+      // Step 1: Set the first image as the main image_url
+      let uploadedImageUrl = "";
+      if (selectedFiles.length > 0) {
+        const firstImageFormData = new FormData();
+        firstImageFormData.append("uploaded_file", selectedFiles[0]);
 
-      if (selectedFile) {
-        const imageFormData = new FormData();
-        imageFormData.append("uploaded_file", selectedFile);
-
-        const uploadResponse = await fetch("http://localhost:8000/products/upload-image", {
+        const firstUploadResponse = await fetch("http://localhost:8000/products/upload-image", {
           method: "POST",
-          body: imageFormData,
+          body: firstImageFormData,
         });
 
-        if (!uploadResponse.ok) {
-          throw new Error("Image upload failed");
+        if (!firstUploadResponse.ok) {
+          throw new Error("Main image upload failed");
         }
 
-        const uploadData = await uploadResponse.json();
-        uploadedImageUrl = uploadData.image_url;
+        const firstUploadData = await firstUploadResponse.json();
+        uploadedImageUrl = firstUploadData.image_url;
       }
 
+      // Step 2: Create the product using the first image URL
       const productResponse = await fetch("http://localhost:8000/products/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -98,12 +105,44 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
         throw new Error("Failed to add product");
       }
 
-      setShowModal(false);
+      const createdProduct = await productResponse.json();
+      const productId = createdProduct.product.id;
+
+      // Step 3: Upload remaining additional images
+      if (selectedFiles.length > 1) {
+        const additionalFormData = new FormData();
+        selectedFiles.slice(1).forEach(file => additionalFormData.append("files", file));
+
+        const additionalUpload = await fetch(`http://localhost:8000/products/${productId}/upload-images`, {
+          method: "POST",
+          body: additionalFormData,
+        });
+
+        if (!additionalUpload.ok) {
+          throw new Error("Additional images upload failed");
+        }
+      }
+
       refreshInventory();
+      setShowModal(false);
+      setFormData({
+        name: "",
+        category: "",
+        stock_level: 0,
+        reserved_stock: 0,
+        reorder_threshold: 0,
+        cost_price: 0,
+        price: 0,
+        supplier_id: "",
+        image_url: "",
+      });
+      setSelectedFiles([]);
+      setPreviewUrls([]);
     } catch (error) {
       console.error("Error:", error);
     }
   };
+
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
@@ -132,47 +171,47 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-lg font-semibold mb-4">Add New Product</h2>
             <div className="space-y-3">
-              <input 
-                type="text" 
-                name="name" 
-                placeholder="Product Name" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="text"
+                name="name"
+                placeholder="Product Name"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
-              <input 
-                type="text" 
-                name="category" 
-                placeholder="Category" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="text"
+                name="category"
+                placeholder="Category"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
-              <input 
-                type="number" 
-                name="stock_level" 
-                placeholder="Stock Level" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="number"
+                name="stock_level"
+                placeholder="Stock Level"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
-              <input 
-                type="number" 
-                name="price" 
-                placeholder="Price" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="number"
+                name="price"
+                placeholder="Price"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
-              <input 
-                type="number" 
-                name="cost_price" 
-                placeholder="Cost Price" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="number"
+                name="cost_price"
+                placeholder="Cost Price"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
-              <input 
-                type="number" 
-                name="reorder_threshold" 
-                placeholder="Reorder Threshold" 
-                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                onChange={handleInputChange} 
+              <input
+                type="number"
+                name="reorder_threshold"
+                placeholder="Reorder Threshold"
+                className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={handleInputChange}
               />
               <select
                 name="supplier_id"
@@ -192,7 +231,8 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
                   name="image_url"
                   placeholder="No file selected"
                   className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={selectedFile ? selectedFile.name : ""}
+                  // value={selectedFile ? selectedFile.name : ""}
+                  value={selectedFiles.map(file => file.name).join(", ")}
                   readOnly
                 />
                 <button
@@ -205,27 +245,36 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
                   type="file"
                   id="imageUpload"
                   accept="image/*"
+                  multiple
                   className="hidden"
                   onChange={handleFileSelect}
                 />
               </div>
 
               {/* Image Preview */}
-              {previewUrl && (
+              {/* {previewUrl && (
                 <div className="mt-2">
                   <img src={previewUrl} alt="Preview" className="w-24 h-24 object-cover rounded" />
                 </div>
+              )} */}
+              {previewUrls.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {previewUrls.map((url, idx) => (
+                    <img key={idx} src={url} alt="Preview" className="w-24 h-24 object-cover rounded" />
+                  ))}
+                </div>
               )}
+
             </div>
             <div className="flex justify-end mt-6 space-x-3">
-              <button 
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors" 
+              <button
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition-colors"
                 onClick={() => setShowModal(false)}
               >
                 Cancel
               </button>
-              <button 
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" 
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                 onClick={handleSubmit}
               >
                 Submit

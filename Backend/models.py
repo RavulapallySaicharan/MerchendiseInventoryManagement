@@ -57,6 +57,12 @@ class Product(Base):
     order_items = relationship("OrderItem", back_populates="product")  # Orders relationship
     stock_movements = relationship("StockMovement", back_populates="product")  # Track stock changes
 
+class ProductImage(Base):
+    __tablename__ = "product_images"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    image_url = Column(String)
+
 class Supplier(Base):
     __tablename__ = 'suppliers'
 

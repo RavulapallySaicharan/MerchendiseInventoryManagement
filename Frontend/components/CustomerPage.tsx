@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X, Star, Upload, LogOut, Package, Image as IconImage, MessageSquare, History, Home, Heart } from 'lucide-react';
+import { Carousel } from 'react-responsive-carousel';
+import 'react-responsive-carousel/lib/styles/carousel.min.css';
 
 // Types
 interface Product {
@@ -8,7 +10,8 @@ interface Product {
     name: string;
     description: string;
     price: number;
-    image_url: string;
+    // image_url: string;
+    image_urls: string[];
     category: string;
     stock_level: number;
     is_in_wishlist?: boolean;
@@ -88,7 +91,7 @@ const CustomerPage: React.FC = () => {
                 setPhotos(photosRes);
                 setReviews(Array.isArray(reviewsRes) ? reviewsRes : []);
                 setReservedOrders(ordersRes);
-                
+
                 // Initialize wishlist state
                 const wishlistMap: { [key: number]: Product } = {};
                 wishlistRes.forEach((item: any) => {
@@ -98,9 +101,9 @@ const CustomerPage: React.FC = () => {
                     }
                 });
                 setWishlist(wishlistMap);
-                
+
                 // Update products with wishlist status
-                setProducts(prevProducts => 
+                setProducts(prevProducts =>
                     prevProducts.map(p => ({
                         ...p,
                         is_in_wishlist: wishlistMap[p.id] !== undefined
@@ -185,13 +188,13 @@ const CustomerPage: React.FC = () => {
 
             // Refresh orders
             const ordersRes = await fetch('http://localhost:8000/orders/customer', {
-                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+                headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
             }).then(res => res.json());
             setReservedOrders(ordersRes);
         } catch (error: unknown) {
             console.error("Error during reservation:", error);
             if (error instanceof Error) {
-            alert(error.message || "Reservation failed");
+                alert(error.message || "Reservation failed");
             } else {
                 alert("Reservation failed");
             }
@@ -245,7 +248,7 @@ const CustomerPage: React.FC = () => {
                     ...prev,
                     [product.id]: product
                 }));
-                setProducts(prev => prev.map(p => 
+                setProducts(prev => prev.map(p =>
                     p.id === product.id ? { ...p, is_in_wishlist: true } : p
                 ));
             }
@@ -269,7 +272,7 @@ const CustomerPage: React.FC = () => {
                     delete newWishlist[productId];
                     return newWishlist;
                 });
-                setProducts(prev => prev.map(p => 
+                setProducts(prev => prev.map(p =>
                     p.id === productId ? { ...p, is_in_wishlist: false } : p
                 ));
             }
@@ -288,11 +291,11 @@ const CustomerPage: React.FC = () => {
                 img.src = event.target?.result as string;
 
                 img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
 
-                        if (!ctx) {
-                            return reject(new Error("Canvas is not supported"));
+                    if (!ctx) {
+                        return reject(new Error("Canvas is not supported"));
                     }
 
                     // Set canvas size to match image
@@ -368,9 +371,10 @@ const CustomerPage: React.FC = () => {
         try {
             const response = await fetch(`http://localhost:8000/orders/${orderId}/cancel`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
-                 }
+                headers: {
+                    "Content-Type": "application/json",
+                    'Authorization': `Bearer ${localStorage.getItem("token")}`
+                }
             });
 
             if (response.ok) {
@@ -391,10 +395,10 @@ const CustomerPage: React.FC = () => {
         try {
             const response = await fetch(`http://localhost:8000/orders/${orderId}/reorder`, {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${localStorage.getItem("token")}` 
-                 },
+                    'Authorization': `Bearer ${localStorage.getItem("token")}`
+                },
             });
 
             if (response.ok) {
@@ -417,13 +421,13 @@ const CustomerPage: React.FC = () => {
     const renderContent = () => {
         switch (activeSection) {
             case 'products':
-    return (
+                return (
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
                             <h1 className="text-2xl font-bold text-gray-800">Our Products</h1>
-                <div className="flex items-center gap-4">
-                                <button 
-                                    onClick={() => setShowWishlist(true)} 
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setShowWishlist(true)}
                                     className="relative"
                                 >
                                     <Heart className="w-6 h-6 text-red-500" />
@@ -433,40 +437,46 @@ const CustomerPage: React.FC = () => {
                                         </span>
                                     )}
                                 </button>
-                    <button onClick={() => setShowCart(true)} className="relative">
+                                <button onClick={() => setShowCart(true)} className="relative">
                                     <ShoppingCart className="w-6 h-6 text-gray-600" />
-                        {Object.keys(cart).length > 0 && (
+                                    {Object.keys(cart).length > 0 && (
                                         <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                                             {Object.keys(cart).length}
                                         </span>
-                        )}
-                    </button>
+                                    )}
+                                </button>
                             </div>
-                </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map(product => (
+                            {products.map(product => (
                                 <div key={product.id} className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg transition-shadow">
-                                <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" />
+                                    {/* <img src={product.image_url} alt={product.name} className="w-full h-48 object-cover rounded-lg mb-4" /> */}
+                                    <div className="w-full h-48 flex items-center justify-center bg-white rounded-lg overflow-hidden">
+                                        <Carousel showThumbs={false}>
+                                            {product.image_urls.map((url, idx) => (
+                                                <img key={idx} src={url} alt={`${product.name} ${idx}`} />
+                                            ))}
+                                        </Carousel>
+                                    </div>
                                     <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
-                                <p className="text-gray-600 mt-2">{product.description}</p>
+                                    <p className="text-gray-600 mt-2">{product.description}</p>
                                     <div className="flex justify-between items-center mt-4">
                                         <p className="font-bold text-lg text-blue-700">${product.price}</p>
                                         <p className="text-sm text-gray-500">Stock: {product.stock_level}</p>
                                     </div>
                                     <div className="flex gap-2 mt-4">
-                                        <button 
-                                            onClick={() => handleAddToCart(product)} 
+                                        <button
+                                            onClick={() => handleAddToCart(product)}
                                             className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-md flex-1 hover:bg-green-600 transition-colors"
                                         >
                                             Add to Cart
                                         </button>
                                         <button
                                             onClick={() => product.is_in_wishlist ? handleRemoveFromWishlist(product.id) : handleAddToWishlist(product)}
-                                            className={`px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-colors ${
-                                                product.is_in_wishlist 
-                                                    ? 'bg-red-500 text-white hover:bg-red-600' 
-                                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
+                                            className={`px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-colors ${product.is_in_wishlist
+                                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                }`}
                                         >
                                             {product.is_in_wishlist ? (
                                                 <>
@@ -495,27 +505,27 @@ const CustomerPage: React.FC = () => {
                             <form onSubmit={handlePhotoUpload} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Select Photo</label>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={(e) => setPhotoFile(e.target.files![0])} 
-                                        required 
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setPhotoFile(e.target.files![0])}
+                                        required
                                         className="w-full border rounded-lg p-2"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Enter category" 
-                                        value={category} 
-                                        onChange={(e) => setCategory(e.target.value)} 
-                                        required 
+                                    <input
+                                        type="text"
+                                        placeholder="Enter category"
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                        required
                                         className="w-full border rounded-lg p-2"
                                     />
                                 </div>
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
                                 >
                                     <Upload className="w-5 h-5" /> Upload Photo
@@ -525,8 +535,8 @@ const CustomerPage: React.FC = () => {
                         <div className="bg-white shadow-md rounded-lg p-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-semibold text-gray-800">Gallery</h2>
-                                    <select
-                                    value={selectedCategory} 
+                                <select
+                                    value={selectedCategory}
                                     onChange={(e) => setSelectedCategory(e.target.value)}
                                     className="border rounded-lg px-3 py-1"
                                 >
@@ -583,19 +593,19 @@ const CustomerPage: React.FC = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={(e) => setReviewPhoto(e.target.files![0])} 
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setReviewPhoto(e.target.files![0])}
                                         className="w-full border rounded-lg p-2"
                                     />
                                 </div>
-                                    <button
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-600 transition-colors"
-                                    >
+                                >
                                     <Upload className="w-5 h-5" /> Submit Review
-                                    </button>
+                                </button>
                             </form>
                         </div>
                         <div className="bg-white shadow-md rounded-lg p-6">
@@ -640,11 +650,10 @@ const CustomerPage: React.FC = () => {
                                     <div key={order.id} className="bg-white shadow-md rounded-lg p-6">
                                         <div className="flex items-center justify-between mb-4">
                                             <h2 className="text-xl font-semibold">Order #{order.id}</h2>
-                                            <span className={`px-2 py-1 rounded text-sm ${
-                                                order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                            <span className={`px-2 py-1 rounded text-sm ${order.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                 order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                'bg-yellow-100 text-yellow-800'
-                                            }`}>
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
                                                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                                             </span>
                                         </div>
@@ -707,44 +716,40 @@ const CustomerPage: React.FC = () => {
                         <div className="bg-white rounded-lg shadow-md p-4 space-y-2">
                             <button
                                 onClick={() => setActiveSection('products')}
-                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                                    activeSection === 'products' 
-                                        ? 'bg-blue-500 text-white' 
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeSection === 'products'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
                             >
                                 <Home className="w-5 h-5" />
                                 Products
                             </button>
                             <button
                                 onClick={() => setActiveSection('photos')}
-                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                                    activeSection === 'photos' 
-                                        ? 'bg-blue-500 text-white' 
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeSection === 'photos'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
                             >
                                 <IconImage className="w-5 h-5" />
                                 Photos
                             </button>
                             <button
                                 onClick={() => setActiveSection('reviews')}
-                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                                    activeSection === 'reviews' 
-                                        ? 'bg-blue-500 text-white' 
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeSection === 'reviews'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
                             >
                                 <MessageSquare className="w-5 h-5" />
                                 Reviews
                             </button>
                             <button
                                 onClick={() => setActiveSection('orders')}
-                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                                    activeSection === 'orders' 
-                                        ? 'bg-blue-500 text-white' 
-                                        : 'text-gray-600 hover:bg-gray-100'
-                                }`}
+                                className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${activeSection === 'orders'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
                             >
                                 <History className="w-5 h-5" />
                                 Orders
@@ -760,40 +765,40 @@ const CustomerPage: React.FC = () => {
             </div>
 
             {/* Cart Modal */}
-                    {showCart && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                            <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
-                                <button
-                                    onClick={() => setShowCart(false)}
-                                    className="absolute top-2 right-2 text-gray-600 hover:text-black"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
+            {showCart && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-96 relative">
+                        <button
+                            onClick={() => setShowCart(false)}
+                            className="absolute top-2 right-2 text-gray-600 hover:text-black"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
                         <h2 className="text-xl font-bold mb-4">Your Cart</h2>
-                                {Object.keys(cart).length > 0 ? (
+                        {Object.keys(cart).length > 0 ? (
                             <>
                                 <ul className="space-y-2">
-                                        {Object.entries(cart).map(([productId, { product, quantity }]) => (
-                                            <li key={product.id} className="border-b py-2 flex justify-between items-center">
-                                                <div>
-                                                    {product.name} - ${product.price} x
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={quantity}
-                                                        onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
-                                                        className="border mx-2 w-12 text-center"
-                                                    />
-                                                </div>
-                                                <button
-                                                    onClick={() => handleRemoveFromCart(product.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <X size={18} />
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {Object.entries(cart).map(([productId, { product, quantity }]) => (
+                                        <li key={product.id} className="border-b py-2 flex justify-between items-center">
+                                            <div>
+                                                {product.name} - ${product.price} x
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={quantity}
+                                                    onChange={(e) => handleUpdateQuantity(product.id, Number(e.target.value))}
+                                                    className="border mx-2 w-12 text-center"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveFromCart(product.id)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                <X size={18} />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                                 <div className="mt-4 pt-4 border-t">
                                     <p className="text-lg font-bold">
                                         Total: ${Object.values(cart).reduce((sum, { product, quantity }) => sum + product.price * quantity, 0)}
@@ -809,9 +814,9 @@ const CustomerPage: React.FC = () => {
                         ) : (
                             <p className="text-gray-500">Your cart is empty.</p>
                         )}
-                            </div>
-                        </div>
-                    )}
+                    </div>
+                </div>
+            )}
 
             {/* Wishlist Modal */}
             {showWishlist && (
@@ -831,7 +836,7 @@ const CustomerPage: React.FC = () => {
                                         <li key={product.id} className="border-b py-2 flex justify-between items-center">
                                             <div>
                                                 {product.name} - ${product.price}
-                </div>
+                                            </div>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleAddToCart(product)}
@@ -845,15 +850,15 @@ const CustomerPage: React.FC = () => {
                                                 >
                                                     <X size={18} />
                                                 </button>
-            </div>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
                             </>
                         ) : (
                             <p className="text-gray-500">Your wishlist is empty.</p>
-                                )}
-                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

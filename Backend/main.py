@@ -29,7 +29,7 @@ from utils import get_password_hash, validate_image
 
 from data_loader import add_batches, add_products, add_suppliers, add_default_roles, add_admin_role
 from database import get_db, engine, get_session
-from models import Base, Product, Supplier, User, LoginActivity, Photo, StockMovement
+from models import Base, Product, Supplier, User, LoginActivity, Photo, StockMovement, ProductImage
 from auth_controller import router as auth_router
 
 from schemas import ProductCreate
@@ -323,8 +323,25 @@ def add_supplier(supplier: SupplierCreate, db: Session = Depends(get_db)):
 
 @app.get("/products")
 def get_products(db: Session = Depends(get_db)):
+    # products = db.query(Product).all()
+    # return products
     products = db.query(Product).all()
-    return products
+    product_images = db.query(ProductImage).all()
+
+    image_map = {}
+    for image in product_images:
+        image_map.setdefault(image.product_id, []).append(image.image_url)
+
+    product_list = []
+    for product in products:
+        product_dict = product.__dict__.copy()
+        # product_dict["image_urls"] = image_map.get(product.id, [])
+        image_urls = [product.image_url] if product.image_url else []
+        additional_images = image_map.get(product.id, [])
+        product_dict["image_urls"] = image_urls + additional_images
+        product_list.append(product_dict)
+
+    return product_list
 
 @app.get("/products/{product_name}")
 def get_product(product_name: str, db: Session = Depends(get_db)):
