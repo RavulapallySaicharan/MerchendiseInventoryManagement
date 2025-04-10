@@ -701,7 +701,7 @@ const CustomerPage: React.FC = () => {
             {/* Top Navigation */}
             <nav className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 shadow-lg">
                 <div className="container mx-auto flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Customer Portal</h1>
+                    <h1 className="text-2xl font-bold">Valpo Velvet</h1>
                     <button onClick={handleLogout} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg shadow-md">
                         <LogOut className="w-5 h-5" /> Logout
                     </button>

@@ -195,8 +195,12 @@ const HomePage: React.FC = () => {
         <nav className="bg-blue-600 text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center">
-              <Package className="w-8 h-8 mr-2" />
-              <h1 className="text-2xl font-bold">Merchandise Inventory Manager</h1>
+              <img
+                src="/valpo-logo.png"
+                alt="Valpo Velvet Logo"
+                className="h-12 sm:h-14 md:h-16 object-contain"
+              />
+              {/* <h1 className="text-2xl font-bold">Merchandise Inventory Manager</h1> */}
             </div>
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -299,10 +303,10 @@ const HomePage: React.FC = () => {
               <h2 className="text-lg font-semibold">Batch Tracking</h2>
             </Link>
             <Link to="/approve-purchases" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <h2 className="text-lg font-semibold">Approve Purchases</h2>
+              <h2 className="text-lg font-semibold">Manage Orders</h2>
             </Link>
             <Link to="/approve-customer-reviews" className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <h2 className="text-lg font-semibold">Approve Customer Reviews</h2>
+              <h2 className="text-lg font-semibold">Customer Reviews</h2>
             </Link>
             <Link
               to="/analytics"
