@@ -108,7 +108,15 @@ const CustomerReviewApproval: React.FC = () => {
                             <p className="text-gray-700">Customer: {review.user_name}</p>
                             <p className="text-gray-700">Rating: {review.rating}</p>
                             <p className="text-gray-700">Review Text: {review.review_text}</p>
-                            <p className="text-gray-700">Review Photo: <img src={encodeURI(review.review_photo)} alt="Review" /></p>
+                            {/* <p className="text-gray-700">Review Photo: <img src={encodeURI(review.review_photo)} alt="Review" /></p> */}
+                            {review.review_photo && (
+    <img
+        src={review.review_photo}
+        alt="Review"
+        className="w-full h-48 object-cover mt-2 rounded"
+    />
+)}
+
                             {/* <p className="text-gray-700">Approved: {review.approved ? "Yes" : "No"}</p> */}
                             <p className="text-gray-700">
                                 Status:{" "}

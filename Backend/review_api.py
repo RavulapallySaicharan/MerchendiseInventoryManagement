@@ -31,7 +31,7 @@ router = APIRouter()
 # Create photos directory if it doesn't exist and mount it for static files
 PHOTOS_DIR = "review_photos"
 os.makedirs(PHOTOS_DIR, exist_ok=True)
-router.mount("/review/static", StaticFiles(directory=PHOTOS_DIR), name="review_static")
+# router.mount("/review/static", StaticFiles(directory=PHOTOS_DIR), name="review_static")
 
 @router.get("/reviews/", response_model=List[ReviewResponse])
 async def get_reviews(db: Session = Depends(get_db)):

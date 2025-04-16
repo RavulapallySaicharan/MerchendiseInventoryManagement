@@ -82,6 +82,11 @@ PHOTOS_DIR = "photos"
 os.makedirs(PHOTOS_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=PHOTOS_DIR), name="static")
 
+REVIEW_PHOTOS_DIR = "review_photos"
+os.makedirs(REVIEW_PHOTOS_DIR, exist_ok=True)
+app.mount("/review/static", StaticFiles(directory=REVIEW_PHOTOS_DIR), name="review_static")
+
+
 
 # Add CORS middleware
 app.add_middleware(
