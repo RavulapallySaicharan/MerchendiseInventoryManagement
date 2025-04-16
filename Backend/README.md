@@ -34,7 +34,6 @@ This is the backend service for the Merchandise Inventory Management system buil
 ### Authentication
 - `POST /token`: Login and get access token
 - `POST /register`: Register new user
-- `POST /reset-password`: Request password reset
 - `POST /change-password`: Change password with token
 
 ### Products

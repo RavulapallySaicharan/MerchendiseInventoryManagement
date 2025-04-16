@@ -300,19 +300,6 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/reset-password")
-def request_password_reset(reset_request: ResetPassword, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == reset_request.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    reset_token = secrets.token_urlsafe(32)
-    user.reset_token = reset_token
-    db.commit()
-    
-    # In a real application, send this token via email
-    return {"message": "Password reset link has been sent to your email", "token": reset_token}
-
 @app.get("/suppliers", response_model=list[dict])
 def get_suppliers(db: Session = Depends(get_db)):
     suppliers = db.query(Supplier).all()

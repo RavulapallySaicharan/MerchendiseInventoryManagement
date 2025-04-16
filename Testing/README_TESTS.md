@@ -50,7 +50,6 @@ Covers:
 Covers:
 - `/register`: Registers a new user.
 - `/token`: Logs in with valid/invalid credentials.
-- `/reset-password`: Requests password reset.
 - `/change-password`: Tries to change password with invalid token.
 
 ---

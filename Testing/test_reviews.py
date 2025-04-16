@@ -141,3 +141,20 @@ def test_reject_review(auth_headers, db_session):
     response = client.put(f"/reviews/{review.id}/reject", headers=auth_headers)
     assert response.status_code == 200
     assert "Review rejected" in response.json()["message"]
+
+
+def test_upload_review_invalid_rating(auth_headers):
+    with open("test_image.png", "wb") as f:
+        f.write(b"\x89PNG\r\n\x1a\n")  # minimal PNG header
+
+    with open("test_image.png", "rb") as file:
+        files = {"uploaded_file": ("test_image.png", file, "image/png")}
+        data = {
+            "rating": "6",  # Invalid
+            "review_text": "Exceeded rating"  # ✅ match your API field
+        }
+
+        response = client.post("/reviews/upload", files=files, data=data, headers=auth_headers)
+
+    assert response.status_code == 400
+    assert "Rating must be between 1 and 5" in response.text
