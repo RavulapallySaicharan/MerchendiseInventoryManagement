@@ -145,7 +145,8 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
 
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
+    // <div className="bg-white shadow-md rounded-lg p-6">
+    <div className="bg-white shadow-md rounded-lg p-6 h-[340px] flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <List className="w-6 h-6 text-blue-500 mr-2" />
@@ -159,7 +160,8 @@ const InventoryList: React.FC<InventoryListProps> = ({ inventory, refreshInvento
         </button>
       </div>
 
-      <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+      {/* <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2"> */}
+      <div className="space-y-3 overflow-y-auto pr-2 flex-1">
         {inventory.map((item) => (
           <InventoryItem key={item.id} item={item} />
         ))}

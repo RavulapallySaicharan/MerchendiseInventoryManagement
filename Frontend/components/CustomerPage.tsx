@@ -471,6 +471,7 @@ const CustomerPage: React.FC = () => {
                                         >
                                             Add to Cart
                                         </button>
+
                                         <button
                                             onClick={() => product.is_in_wishlist ? handleRemoveFromWishlist(product.id) : handleAddToWishlist(product)}
                                             className={`px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-colors ${product.is_in_wishlist
@@ -481,12 +482,12 @@ const CustomerPage: React.FC = () => {
                                             {product.is_in_wishlist ? (
                                                 <>
                                                     <Heart className="w-5 h-5 fill-current" />
-                                                    In Wishlist
+                                                    {/* In Wishlist */}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Heart className="w-5 h-5" />
-                                                    Add to Wishlist
+                                                    {/* Add to Wishlist */}
                                                 </>
                                             )}
                                         </button>
