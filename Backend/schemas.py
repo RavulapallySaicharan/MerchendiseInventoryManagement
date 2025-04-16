@@ -46,6 +46,11 @@ class ProductCreate(BaseModel):
     reorder_threshold: int
     reserved_stock: int
 
+class ProductStockUpdate(BaseModel):
+    name: str
+    stock_level: int
+    supplier_id: int
+
 class WishlistItemBase(BaseModel):
     product_id: int
 

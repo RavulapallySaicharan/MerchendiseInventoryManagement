@@ -32,7 +32,7 @@ from database import get_db, engine, get_session
 from models import Base, Product, Supplier, User, LoginActivity, Photo, StockMovement, ProductImage
 from auth_controller import router as auth_router
 
-from schemas import ProductCreate
+from schemas import ProductCreate, ProductStockUpdate
 
 from fastapi.staticfiles import StaticFiles
 
@@ -342,8 +342,8 @@ def get_product(product_name: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@app.post("/products")
-def add_or_update_product(product: ProductCreate, db: Session = Depends(get_db)):
+@app.post("/products/update-quantity")
+def add_or_update_product(product: ProductStockUpdate, db: Session = Depends(get_db)):
     # Check if the product already exists in the database
     existing_product = db.query(Product).filter(models.Product.name == product.name).first()
 

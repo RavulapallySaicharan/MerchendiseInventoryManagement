@@ -114,7 +114,7 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
     }
 
     try {
-      const response = await fetch("http://localhost:8000/products", {
+      const response = await fetch("http://localhost:8000/products/update-quantity", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -137,6 +137,7 @@ const SupplierIntegration: React.FC<SupplierIntegrationProps> = ({ inventory, fe
 
       // Comment out fetchInventory() and test again
       fetchInventory()
+      alert("Quantity updated successfully");
     } catch (error) {
       console.error("Error adding product:", error)
       alert("Failed to add product")
