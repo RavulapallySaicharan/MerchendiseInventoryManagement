@@ -330,6 +330,7 @@ def get_products(db: Session = Depends(get_db)):
         # product_dict["image_urls"] = image_map.get(product.id, [])
         image_urls = [product.image_url] if product.image_url else []
         additional_images = image_map.get(product.id, [])
+        product_dict["supplier"] = product.supplier.name if product.supplier else "Unknown"
         product_dict["image_urls"] = image_urls + additional_images
         product_list.append(product_dict)
 
