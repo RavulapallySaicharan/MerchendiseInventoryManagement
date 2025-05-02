@@ -12,32 +12,25 @@ def add_suppliers():
 
     suppliers = [
         Supplier(
-            name="ABC Merchandise Co.",
-            contact_person="John Doe",
-            phone="123-456-7890",
-            email="abc_merch@example.com",
-            address="123 Market St, Valparaiso, IN",
+            name="Rusthead Designs",
+            contact_person="Rusthead Team",
+            phone="000-000-0001",
+            email="support@rusthead.com",
+            address="https://rusthead.com"
         ),
         Supplier(
-            name="Tee World",
-            contact_person="Alice Smith",
-            phone="987-654-3210",
-            email="tee_world@example.com",
-            address="456 Fashion Ave, Chicago, IL",
+            name="Zazzle",
+            contact_person="Zazzle Team",
+            phone="000-000-0002",
+            email="support@zazzle.com",
+            address="https://www.zazzle.com"
         ),
         Supplier(
-            name="Mug Masters",
-            contact_person="Bob Johnson",
-            phone="555-234-5678",
-            email="mug_masters@example.com",
-            address="789 Coffee Rd, Indianapolis, IN",
-        ),
-        Supplier(
-            name="Keychain Kingdom",
-            contact_person="Emma Wilson",
-            phone="111-222-3333",
-            email="keychain_kingdom@example.com",
-            address="321 Accessory Ln, Milwaukee, WI",
+            name="Grandstand Glassware",
+            contact_person="Grandstand Sales",
+            phone="000-000-0003",
+            email="info@egrandstand.com",
+            address="https://egrandstand.com"
         ),
     ]
 
@@ -49,22 +42,94 @@ def add_suppliers():
     session.commit()
     session.close()
 
+
 def add_products():
     session = get_session()
-    products = [
-        Product(name="Branded T-shirt", category="Clothing", stock_level=10, reorder_threshold=20, price=15.99, cost_price=10.99, supplier_id=1, image_url="/images/tshirt.png"),
-        Product(name="Mug", category="Kitchenware", stock_level=200, reorder_threshold=50, price=5.99, cost_price=4.99, supplier_id=2, image_url="/images/mug.jpg"),
-        Product(name="Keychain", category="Accessories", stock_level=300, reorder_threshold=75, price=2.99, cost_price=1.99, supplier_id=3, image_url="/images/keychain.jpeg"),
-        Product(name="Reusable Ice Cream Container", category="Kitchenware", stock_level=150, reorder_threshold=30, price=10.99, cost_price=8.99, supplier_id=4, image_url="/images/ice_cream_container.jpg"),
+
+    # Fetch supplier IDs by name
+    rusthead_id = session.query(Product.supplier_id).join(Product.supplier).filter_by(name="Rusthead Designs").first()
+    zazzle_id = session.query(Product.supplier_id).join(Product.supplier).filter_by(name="Zazzle").first()
+    grandstand_id = session.query(Product.supplier_id).join(Product.supplier).filter_by(name="Grandstand Glassware").first()
+
+    # Fallbacks in case any supplier ID is not found
+    rusthead_id = rusthead_id[0] if rusthead_id else 1
+    zazzle_id = zazzle_id[0] if zazzle_id else 2
+    grandstand_id = grandstand_id[0] if grandstand_id else 3
+
+    flat_products = [
+        # T-SHIRTS ($20)
+        ("T-Shirt - Blue - Small", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Blue - Medium", "Clothing", 2, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Blue - Large", "Clothing", 6, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Blue - XL", "Clothing", 4, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Blue - XXL", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Orange - Small", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Orange - Medium", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Orange - Large", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Orange - XL", "Clothing", 2, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Orange - XXL", "Clothing", 2, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Purple - Small", "Clothing", 2, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Purple - Medium", "Clothing", 0, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Purple - Large", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Purple - XL", "Clothing", 2, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Purple - XXL", "Clothing", 1, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Green - Small", "Clothing", 3, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Green - Medium", "Clothing", 0, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Green - Large", "Clothing", 1, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Green - XL", "Clothing", 1, 20.0, 14.0, rusthead_id),
+        ("T-Shirt - Green - XXL", "Clothing", 2, 20.0, 14.0, rusthead_id),
+
+        # Truck Shirt - Short Sleeve ($25)
+        ("Truck Shirt - SS - Small", "Clothing", 2, 25.0, 18.0, rusthead_id),
+        ("Truck Shirt - SS - Medium", "Clothing", 3, 25.0, 18.0, rusthead_id),
+        ("Truck Shirt - SS - Large", "Clothing", 10, 25.0, 18.0, rusthead_id),
+        ("Truck Shirt - SS - XL", "Clothing", 8, 25.0, 18.0, rusthead_id),
+        ("Truck Shirt - SS - XXL", "Clothing", 5, 25.0, 18.0, rusthead_id),
+
+        # Truck Shirt - Long Sleeve ($30)
+        ("Truck Shirt - LS - Small", "Clothing", 4, 30.0, 22.0, rusthead_id),
+        ("Truck Shirt - LS - Medium", "Clothing", 6, 30.0, 22.0, rusthead_id),
+        ("Truck Shirt - LS - Large", "Clothing", 20, 30.0, 22.0, rusthead_id),
+        ("Truck Shirt - LS - XL", "Clothing", 5, 30.0, 22.0, rusthead_id),
+        ("Truck Shirt - LS - XXL", "Clothing", 7, 30.0, 22.0, rusthead_id),
+
+        # Tote Bags ($15)
+        ("Tote Bag", "Bag", 10, 15.0, 10.0, zazzle_id),
+
+        # Mugs ($15)
+        ("Mug", "Kitchenware", 20, 15.0, 10.0, grandstand_id),
+
+        # Hats - Baseball Style ($25)
+        ("Hat - Baseball - Beige", "Hat", 3, 25.0, 18.0, rusthead_id),
+        ("Hat - Baseball - Navy", "Hat", 4, 25.0, 18.0, rusthead_id),
+
+        # Hats - 5 Panel ($25)
+        ("Hat - 5 Panel - Yellow", "Hat", 1, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - Red", "Hat", 3, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - Navy", "Hat", 1, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - Purple", "Hat", 6, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - White", "Hat", 2, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - Teal", "Hat", 1, 25.0, 18.0, rusthead_id),
+        ("Hat - 5 Panel - Black", "Hat", 3, 25.0, 18.0, rusthead_id),
     ]
 
-    for product in products:
-        existing_product = session.query(Product).filter_by(name=product.name).first()
-        if not existing_product:
-            session.add(product)
+    for name, category, stock_level, price, cost_price, supplier_id in flat_products:
+        existing = session.query(Product).filter_by(name=name).first()
+        if not existing:
+            session.add(Product(
+                name=name,
+                category=category,
+                stock_level=stock_level,
+                reorder_threshold=5,
+                price=price,
+                cost_price=cost_price,
+                supplier_id=supplier_id,
+                image_url=""
+            ))
 
     session.commit()
     session.close()
+
 
 def add_batches():
     session = get_session()

@@ -466,6 +466,7 @@ def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['order_items']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['product_images']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['suppliers']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['login_activity']])

@@ -46,7 +46,8 @@ async def get_all_reviews(db: Session = Depends(get_db)):
 async def create_review(
     rating: int= Form(...),
     review_text: str= Form(...),
-    review_photo: UploadFile = File(None),
+    # review_photo: UploadFile = File(None),
+    review_photo: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

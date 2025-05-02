@@ -140,7 +140,8 @@ const CustomerPage: React.FC = () => {
         const formData = new FormData();
         formData.append("rating", rating.toString());
         formData.append("review_text", reviewText);
-        if (reviewPhoto) formData.append("review_photo", reviewPhoto);
+        formData.append("review_photo", reviewPhoto || new Blob());
+
 
         try {
             const response = await fetch("http://localhost:8000/reviews/upload", {
