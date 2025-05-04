@@ -328,10 +328,14 @@ def get_products(db: Session = Depends(get_db)):
     for product in products:
         product_dict = product.__dict__.copy()
         # product_dict["image_urls"] = image_map.get(product.id, [])
-        image_urls = [product.image_url] if product.image_url else []
+        # image_urls = [product.image_url] if product.image_url else []
+        image_urls = []
+        if product.image_url and product.image_url.strip():
+            image_urls.append(product.image_url.strip())
         additional_images = image_map.get(product.id, [])
         product_dict["supplier"] = product.supplier.name if product.supplier else "Unknown"
         product_dict["image_urls"] = image_urls + additional_images
+        # product_dict["image_urls"] = additional_images
         product_list.append(product_dict)
 
     return product_list
@@ -466,8 +470,8 @@ def initialize_db():
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['orders']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['order_items']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['users']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
-    # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['product_images']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['products']])
+    Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['product_images']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['suppliers']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['reviews']])
     # Base.metadata.drop_all(bind=engine, tables=[Base.metadata.tables['login_activity']])

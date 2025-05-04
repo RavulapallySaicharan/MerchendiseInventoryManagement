@@ -1,5 +1,5 @@
 from database import get_session
-from models import Product, Supplier, Batch, Role, User
+from models import Product, Supplier, Batch, Role, User, ProductImage
 from datetime import date
 
 def add_admin_role():
@@ -126,6 +126,91 @@ def add_products():
                 supplier_id=supplier_id,
                 image_url=""
             ))
+
+    session.commit()
+    session.close()
+    add_product_images()
+
+def add_product_images():
+    session = get_session()
+
+    # Sample product images - replace with your actual product IDs
+    images = [
+        ProductImage(product_id=1, image_url="/images/tshirts/blue-front.jpg"),
+        ProductImage(product_id=1, image_url="/images/tshirts/blue-back.jpg"),
+        ProductImage(product_id=2, image_url="/images/tshirts/blue-front.jpg"),
+        ProductImage(product_id=2, image_url="/images/tshirts/blue-back.jpg"),
+        ProductImage(product_id=3, image_url="/images/tshirts/blue-front.jpg"),
+        ProductImage(product_id=3, image_url="/images/tshirts/blue-back.jpg"),
+        ProductImage(product_id=4, image_url="/images/tshirts/blue-front.jpg"),
+        ProductImage(product_id=4, image_url="/images/tshirts/blue-back.jpg"),
+        ProductImage(product_id=5, image_url="/images/tshirts/blue-front.jpg"),
+        ProductImage(product_id=5, image_url="/images/tshirts/blue-back.jpg"),
+        ProductImage(product_id=6, image_url="/images/tshirts/orange-front.jpg"),
+        ProductImage(product_id=6, image_url="/images/tshirts/orange-back.jpg"),
+        ProductImage(product_id=7, image_url="/images/tshirts/orange-front.jpg"),
+        ProductImage(product_id=7, image_url="/images/tshirts/orange-back.jpg"),
+        ProductImage(product_id=8, image_url="/images/tshirts/orange-front.jpg"),
+        ProductImage(product_id=8, image_url="/images/tshirts/orange-back.jpg"),
+        ProductImage(product_id=9, image_url="/images/tshirts/orange-front.jpg"),
+        ProductImage(product_id=9, image_url="/images/tshirts/orange-back.jpg"),
+        ProductImage(product_id=10, image_url="/images/tshirts/orange-front.jpg"),
+        ProductImage(product_id=10, image_url="/images/tshirts/orange-back.jpg"),
+        ProductImage(product_id=11, image_url="/images/tshirts/purple-front.jpg"),
+        ProductImage(product_id=11, image_url="/images/tshirts/purple-back.jpg"),
+        ProductImage(product_id=12, image_url="/images/tshirts/purple-front.jpg"),
+        ProductImage(product_id=12, image_url="/images/tshirts/purple-back.jpg"),
+        ProductImage(product_id=13, image_url="/images/tshirts/purple-front.jpg"),
+        ProductImage(product_id=13, image_url="/images/tshirts/purple-back.jpg"),
+        ProductImage(product_id=14, image_url="/images/tshirts/purple-front.jpg"),
+        ProductImage(product_id=14, image_url="/images/tshirts/purple-back.jpg"),
+        ProductImage(product_id=15, image_url="/images/tshirts/purple-front.jpg"),
+        ProductImage(product_id=15, image_url="/images/tshirts/purple-back.jpg"),
+        ProductImage(product_id=16, image_url="/images/tshirts/green-front.jpg"),
+        ProductImage(product_id=16, image_url="/images/tshirts/green-back.jpg"),
+        ProductImage(product_id=16, image_url="/images/tshirts/green-zoom.jpg"),
+        ProductImage(product_id=17, image_url="/images/tshirts/green-front.jpg"),
+        ProductImage(product_id=17, image_url="/images/tshirts/green-back.jpg"),
+        ProductImage(product_id=17, image_url="/images/tshirts/green-zoom.jpg"),
+        ProductImage(product_id=18, image_url="/images/tshirts/green-front.jpg"),
+        ProductImage(product_id=18, image_url="/images/tshirts/green-back.jpg"),
+        ProductImage(product_id=18, image_url="/images/tshirts/green-zoom.jpg"),
+        ProductImage(product_id=19, image_url="/images/tshirts/green-front.jpg"),
+        ProductImage(product_id=19, image_url="/images/tshirts/green-back.jpg"),
+        ProductImage(product_id=19, image_url="/images/tshirts/green-zoom.jpg"),  
+        ProductImage(product_id=20, image_url="/images/tshirts/green-front.jpg"),
+        ProductImage(product_id=20, image_url="/images/tshirts/green-back.jpg"),
+        ProductImage(product_id=20, image_url="/images/tshirts/green-zoom.jpg"),
+        ProductImage(product_id=21, image_url="/images/tshirts/truck-shirt-ss.jpg"),
+        ProductImage(product_id=21, image_url="/images/tshirts/truck-shirt-ss-zoom.jpg"),
+        ProductImage(product_id=22, image_url="/images/tshirts/truck-shirt-ss.jpg"),
+        ProductImage(product_id=22, image_url="/images/tshirts/truck-shirt-ss-zoom.jpg"),
+        ProductImage(product_id=23, image_url="/images/tshirts/truck-shirt-ss.jpg"),
+        ProductImage(product_id=23, image_url="/images/tshirts/truck-shirt-ss-zoom.jpg"),
+        ProductImage(product_id=24, image_url="/images/tshirts/truck-shirt-ss.jpg"),
+        ProductImage(product_id=24, image_url="/images/tshirts/truck-shirt-ss-zoom.jpg"),
+        ProductImage(product_id=25, image_url="/images/tshirts/truck-shirt-ss.jpg"),
+        ProductImage(product_id=25, image_url="/images/tshirts/truck-shirt-ss-zoom.jpg"),
+        ProductImage(product_id=26, image_url="/images/tshirts/truck-shirt-ls.jpg"),
+        ProductImage(product_id=27, image_url="/images/tshirts/truck-shirt-ls.jpg"),
+        ProductImage(product_id=28, image_url="/images/tshirts/truck-shirt-ls.jpg"),
+        ProductImage(product_id=29, image_url="/images/tshirts/truck-shirt-ls.jpg"),
+        ProductImage(product_id=30, image_url="/images/tshirts/truck-shirt-ls.jpg"),
+        ProductImage(product_id=31, image_url="/images/tote-bag.jpg"),
+        ProductImage(product_id=32, image_url="/images/mug.jpg"),
+        ProductImage(product_id=33, image_url="/images/hat/hat.jpg"),
+        ProductImage(product_id=34, image_url="/images/hat/hat.jpg"),
+        ProductImage(product_id=35, image_url="/images/hat/hat-yellow.jpg"),
+        ProductImage(product_id=36, image_url="/images/hat/hat-red.jpg"),
+        ProductImage(product_id=37, image_url="/images/hat/hat-voilet.jpg"),
+        ProductImage(product_id=38, image_url="/images/hat/hat-voilet.jpg"),
+        ProductImage(product_id=39, image_url="/images/hat/hat-white.jpg"),
+        ProductImage(product_id=40, image_url="/images/hat/hat.jpg"),
+        ProductImage(product_id=41, image_url="/images/hat/hat-black.jpg")
+    ]
+
+    for img in images:
+        session.add(img)
 
     session.commit()
     session.close()
