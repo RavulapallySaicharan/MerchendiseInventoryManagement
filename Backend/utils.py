@@ -15,8 +15,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_SENDER = "velvetvalpo@gmail.com"
-EMAIL_PASSWORD = "srasrfvhbaevwmfe"
+EMAIL_SENDER = "valpovelvet9@gmail.com"
+EMAIL_PASSWORD = "amfmzltoovjzgcgd"
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Compare the plain password with the hashed password."""

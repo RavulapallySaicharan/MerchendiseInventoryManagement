@@ -4,7 +4,7 @@ from datetime import date
 
 def add_admin_role():
     session = get_session()
-    session.query(User).filter(User.username == "admin").update({"role_id": 1})
+    session.query(User).filter(User.username == "valpovelvet9").update({"role_id": 1})
     session.commit()
 
 def add_suppliers():
