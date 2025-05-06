@@ -107,6 +107,7 @@ def reject_purchase(order_id: int, rejection_data: RejectionReason, db: Session 
 
         product.reserved_stock -= item.quantity  # Remove reserved stock
         product.stock_level += item.quantity
+        db.add(product)
 
     order.status = "rejected"  # Mark order as completed
     order.rejection_reason = rejection_data.reason
@@ -229,7 +230,18 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
         raise HTTPException(status_code=400, detail="Only pending orders can be cancelled.")
     order.status = "cancelled"
     db.add(order)
+
+    for item in db.query(OrderItem).filter(OrderItem.order_id == order.id).all():
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if not product:
+            continue  # Product may have been removed
+
+        product.reserved_stock -= item.quantity  # Remove reserved stock
+        product.stock_level += item.quantity
+        db.add(product)
+
     db.commit()
+
     return {"message": "Order cancelled successfully."}
 
 @router.post("/orders/{order_id}/reorder")

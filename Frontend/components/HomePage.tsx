@@ -246,8 +246,9 @@ const HomePage: React.FC = () => {
                         <select
                           value={selectedReport}
                           onChange={(e) => setSelectedReport(e.target.value)}
-                          className="w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+                          className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
                         >
+
                           <option value="">Select a report type</option>
                           {reportTypes.map((report) => (
                             <option key={report.id} value={report.id}>
@@ -259,20 +260,22 @@ const HomePage: React.FC = () => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                         <input
-                          type="date"
-                          value={dateRange.startDate}
-                          onChange={(e) => handleDateChange(e, 'startDate')}
-                          className="w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
-                        />
+  type="date"
+  value={dateRange.startDate}
+  onChange={(e) => handleDateChange(e, 'startDate')}
+  className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+/>
+
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
                         <input
-                          type="date"
-                          value={dateRange.endDate}
-                          onChange={(e) => handleDateChange(e, 'endDate')}
-                          className="w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
-                        />
+  type="date"
+  value={dateRange.endDate}
+  onChange={(e) => handleDateChange(e, 'endDate')}
+  className="w-full bg-white text-gray-800 border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+/>
+
                       </div>
                       <div className="flex gap-2">
                         <button

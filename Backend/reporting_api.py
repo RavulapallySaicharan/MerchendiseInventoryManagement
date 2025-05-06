@@ -8,7 +8,7 @@ import csv
 from fastapi.responses import StreamingResponse
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, Literal
 
 router = APIRouter()
@@ -37,7 +37,7 @@ def get_top_selling_products(
     if date_range.start_date:
         query = query.filter(OrderItem.created_at >= date_range.start_date)
     if date_range.end_date:
-        query = query.filter(OrderItem.created_at <= date_range.end_date)
+        query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
 
     results = query.group_by(Product.id)\
         .order_by(func.sum(OrderItem.quantity).desc())\
@@ -61,7 +61,7 @@ def stock_turnover(
     if date_range.start_date:
         query = query.filter(func.date(StockMovement.timestamp) >= date_range.start_date)
     if date_range.end_date:
-        query = query.filter(func.date(StockMovement.timestamp) <= date_range.end_date)
+        query = query.filter(func.date(StockMovement.timestamp) < date_range.end_date + timedelta(days=1))
 
     result = query.group_by(Product.id).all()
     stock_turnover = [{"name": row[0], "turnover_rate": round(row[1], 2) if row[1] is not None else 0} for row in result]
@@ -83,7 +83,7 @@ def profit_analysis(
     if date_range.start_date:
         query = query.filter(OrderItem.created_at >= date_range.start_date)
     if date_range.end_date:
-        query = query.filter(OrderItem.created_at <= date_range.end_date)
+        query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
 
     result = query.group_by(Product.id).all()
     profit_analysis = [
@@ -119,7 +119,7 @@ def export_csv(
     if date_range.start_date:
         query = query.filter(OrderItem.created_at >= date_range.start_date)
     if date_range.end_date:
-        query = query.filter(OrderItem.created_at <= date_range.end_date)
+        query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
 
     data = query.group_by(Product.id).all()
     
@@ -168,7 +168,7 @@ def export_pdf(
     if date_range.start_date:
         query = query.filter(OrderItem.created_at >= date_range.start_date)
     if date_range.end_date:
-        query = query.filter(OrderItem.created_at <= date_range.end_date)
+        query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
 
     data = query.group_by(Product.id).all()
 
@@ -211,7 +211,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(OrderItem.created_at >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(OrderItem.created_at <= date_range.end_date)
+                    query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id)\
                     .order_by(func.sum(OrderItem.quantity).desc())\
@@ -236,7 +236,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(func.date(StockMovement.timestamp) >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(func.date(StockMovement.timestamp) <= date_range.end_date)
+                    query = query.filter(func.date(StockMovement.timestamp) < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id).all()
                 for row in results:
@@ -259,7 +259,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(OrderItem.created_at >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(OrderItem.created_at <= date_range.end_date)
+                    query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id).all()
                 for row in results:
@@ -282,7 +282,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(Batch.received_date >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(Batch.received_date <= date_range.end_date)
+                    query = query.filter(Batch.received_date < date_range.end_date + timedelta(days=1))
                 
                 batches = query.all()
                 for batch in batches:
@@ -310,8 +310,8 @@ def export_report(
             pdf.setFont("Helvetica-Bold", 16)
             report_titles = {
                 "top-selling-products": "Top Selling Products Report",
-                "reports/stock-turnover": "Stock Turnover Report",
-                "reports/profit-analysis": "Profit Analysis Report",
+                "stock-turnover": "Stock Turnover Report",
+                "profit-analysis": "Profit Analysis Report",
                 "batches/aging-report": "Batch Aging Report"
             }
             pdf.drawString(200, height - 50, report_titles[report_type])
@@ -336,7 +336,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(OrderItem.created_at >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(OrderItem.created_at <= date_range.end_date)
+                    query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id)\
                     .order_by(func.sum(OrderItem.quantity).desc())\
@@ -351,7 +351,7 @@ def export_report(
                         pdf.showPage()
                         y_position = height - 50
             
-            elif report_type == "reports/stock-turnover":
+            elif report_type == "stock-turnover":
                 pdf.drawString(50, y_position, "Product Name")
                 pdf.drawString(300, y_position, "Turnover Rate")
                 y_position -= 20
@@ -365,7 +365,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(func.date(StockMovement.timestamp) >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(func.date(StockMovement.timestamp) <= date_range.end_date)
+                    query = query.filter(func.date(StockMovement.timestamp) < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id).all()
                 for row in results:
@@ -376,7 +376,7 @@ def export_report(
                         pdf.showPage()
                         y_position = height - 50
             
-            elif report_type == "reports/profit-analysis":
+            elif report_type == "profit-analysis":
                 pdf.drawString(50, y_position, "Product Name")
                 pdf.drawString(150, y_position, "Total Sold")
                 pdf.drawString(250, y_position, "Revenue")
@@ -395,7 +395,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(OrderItem.created_at >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(OrderItem.created_at <= date_range.end_date)
+                    query = query.filter(OrderItem.created_at < date_range.end_date + timedelta(days=1))
                 
                 results = query.group_by(Product.id).all()
                 for row in results:
@@ -422,7 +422,7 @@ def export_report(
                 if date_range.start_date:
                     query = query.filter(Batch.received_date >= date_range.start_date)
                 if date_range.end_date:
-                    query = query.filter(Batch.received_date <= date_range.end_date)
+                    query = query.filter(Batch.received_date < date_range.end_date + timedelta(days=1))
                 
                 batches = query.all()
                 for batch in batches:
